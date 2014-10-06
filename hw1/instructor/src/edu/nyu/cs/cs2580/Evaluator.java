@@ -54,7 +54,7 @@ class Evaluator {
     line = line + evaluateNDCG(relevance,ids,10);
     line = line + evaluateReciprocal(relevance,ids) + "\n";
     writeToFile(path, line);
-    //System.out.println(line);
+    System.out.println(line);
 
   }
 
@@ -162,29 +162,30 @@ public static void convertSysin(String[] query, Vector <Integer> scoredDocuments
     double [] recs = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,0.8,0.9,1.0};
     double[] pres = new double[recs.length];
     String str = ""; //return precisions in the string
+    //check how many relevance docs in the judgement file
+    int totalRR = 0;
+    for(Integer key: qr.keySet()){
+      if(qr.get(key) == 1){
+        totalRR +=1;
+      }
+    }
+    //System.out.println("totalRR is " + totalRR);
+    if(totalRR == 0){
+      //System.out.println("there is no relevant files based on the judgement");
+      for(int j = 0; j < pres.length; j++){
+        str = str + pres[j] + "\t";
+      }
+      return str;
+    }
       double RR = 0.0; //the count of relevant docs
       double N = 0.0;
       double RC = 0.0;
       double Prec = 0.0;
-      double maxPrec = 1.0;
+      double maxPrec = 0.0;
       int next = 1;
      for(int i = 0; i < ids.size();i++){
       int did = ids.get(i);
-        //check how many relevance docs in the judgement file
-        int totalRR = 0;
-        for(Integer key: qr.keySet()){
-          if(qr.get(key) == 1){
-            totalRR +=1;
-          }
-        }
-        //System.out.println("totalRR is " + totalRR);
-        if(totalRR == 0){
-          System.out.println("there is no relevant files based on the judgement");
-          for(int j = 0; j < pres.length; j++){
-            str = str + pres[j] + "\t";
-          }
-          break;
-        }
+
         //do evaluation
         ++N; //update total count
         if (qr.containsKey(did) != false && qr.get(did) == 1.0){
@@ -198,8 +199,13 @@ public static void convertSysin(String[] query, Vector <Integer> scoredDocuments
                 maxPrec = Prec;
               }
             }else{
-              //first update precision at preious recall level
-              pres[next-1] = maxPrec;
+              //first check if the recall level is 0.0 (maxPrec ==0)
+              if(maxPrec ==0){
+                pres[next-1] = Prec;
+              }else{
+                 pres[next-1] = maxPrec;//first update precision at preious recall level
+              }
+             
              // System.out.println("got max precision " + pres[next-1] + " at recall level " + recs[next-1]);
               maxPrec = Prec;
               //check if RC is bigger than next recall point
@@ -421,25 +427,37 @@ public static String evaluateNDCG(
         ++N;
       }
 
-      if(DCG.length !=1 || DCG[0]!=0){
-        if(DCG.length ==1)
-         res = 1.0;
-       else{
-           double[] tmp = DCG.clone();
-           
-           Arrays.sort(tmp);
-           
-           for(int i = k-1,j=0;i>=0;i--,j++){
-            IDCG[j] = tmp[i];
+      if(DCG.length == 1.0 ){
+                if(DCG[0] !=0.0)
+               res = 1.0;
+             else res = 0.0;
+             }
+              else{
+                int flag = 0;
+                for(int i =0;i<k;i++){
+                  if(DCG[i] !=0.0){
+                    flag = 1;
+                  break;
+                }
+              }
 
-           }
-           double dcg = getDCG(DCG);
-           double idcg = getDCG(IDCG);
-           res = dcg/idcg;  
-        }
+        if(flag ==1){
+         double[] tmp = DCG.clone();
+         
+         Arrays.sort(tmp);
+         
+         for(int i = k-1,j=0;i>=0;i--,j++){
+          IDCG[j] = tmp[i];
 
-
+         }
+         double dcg = getDCG(DCG);
+         double idcg = getDCG(IDCG);
+         res = dcg/idcg;  
       }
+    }
+
+
+      
       //System.out.println(Double.toString(res));
        o = Double.toString(res)+"\t";
       
