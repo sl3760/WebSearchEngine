@@ -83,7 +83,7 @@ class QueryHandler implements HttpHandler {
             } else if (ranker_type.equals("linear")){
               Vector < ScoredDocument > sds = _ranker.runquery(query, ranker_type);
               queryResponse = generateResponse(query,sds,queryResponse);
-              writeToFile("../result/hw1.2-linear.tsv", queryResponse);
+              writeToFile("../result/hw1.1-linear.tsv", queryResponse);
             } else if(ranker_type.equals("numviews")){
               //queryResponse = (ranker_type + " not implemented.");
               Vector < ScoredDocument > sds = _ranker.runquery(query, ranker_type);
