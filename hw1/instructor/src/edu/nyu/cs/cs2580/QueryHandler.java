@@ -136,8 +136,10 @@ class QueryHandler implements HttpHandler {
   }
 
   private void writeToFile(String filepath, String text) throws FileNotFoundException{
-      try(PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filepath, true)))) {
+      try{
+          PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filepath, true)));
           out.print(text);
+          out.close();
       }catch (IOException e) {
           //exception handling left as an exercise for the reader
       }

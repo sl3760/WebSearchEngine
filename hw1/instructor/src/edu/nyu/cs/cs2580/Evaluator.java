@@ -154,11 +154,8 @@ public static void convertSysin(String[] query, Vector <Integer> scoredDocuments
       
     return Double.toString(avg);
   } 
-
-
-  //evaluate with precision at recal points
-  public static String evaluatePrecAtRec(HashMap < Integer , Double > qr, Vector<Integer> ids){
-    // only consider one query per call  
+//*********second version of precision at recall
+  public static String evaluatePrecAtRec(HashMap<Integer,Double> qr, Vector<Integer> ids){
     double [] recs = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,0.8,0.9,1.0};
     double[] pres = new double[recs.length];
     String str = ""; //return precisions in the string
@@ -177,61 +174,42 @@ public static void convertSysin(String[] query, Vector <Integer> scoredDocuments
       }
       return str;
     }
-      double RR = 0.0; //the count of relevant docs
-      double N = 0.0;
-      double RC = 0.0;
-      double Prec = 0.0;
-      double maxPrec = 0.0;
-      int next = 1;
-     for(int i = 0; i < ids.size();i++){
-      int did = ids.get(i);
+    double RR = 0.0; //the count of relevant docs
+    double N = 0.0;
+    double RC = 0.0;
+    double Prec = 0.0;
+    double maxPrec = 0.0;
 
-        //do evaluation
-        ++N; //update total count
-        if (qr.containsKey(did) != false && qr.get(did) == 1.0){
-          RR += 1; 
-          RC = RR / totalRR;
-          Prec = RR / N; 
-         // System.out.println("the current recall is " + RC + " and precision is  " + Prec);
-          if(RC >= recs[next-1]){
-            if(RC < recs[next]){
-              if(maxPrec < Prec){
-                maxPrec = Prec;
-              }
+    for(int i = 0; i < ids.size();i++){
+      int did = ids.get(i);
+      ++N; //update total count
+      if (qr.containsKey(did) != false && qr.get(did) == 1.0){
+        RR += 1; 
+        RC = RR / totalRR;
+        Prec = RR / N; 
+        //check recall level and see if we need to update previous number
+        for(int j=10; j>-1; j--){
+          if(RC>recs[j] || RC==recs[j]){
+            if(Prec>pres[j]){
+                pres[j] = Prec;
             }else{
-              //first check if the recall level is 0.0 (maxPrec ==0)
-              if(maxPrec ==0){
-                pres[next-1] = Prec;
-              }else{
-                 pres[next-1] = maxPrec;//first update precision at preious recall level
-              }
-             
-             // System.out.println("got max precision " + pres[next-1] + " at recall level " + recs[next-1]);
-              maxPrec = Prec;
-              //check if RC is bigger than next recall point
-              while(RC - recs[next] > 0 || RC-recs[next] == 0){
-                pres[next] = maxPrec;
-                //System.out.println("got max precision " + pres[next] + " at recall level " + recs[next]);
-                if(next<recs.length -1){
-                  next++;
-                }else{
-                  break;
-                }
-              }
-              if(RC==1){
-                //print out precision list
-              for(int k = 0; k < pres.length; k++){
-                str = str + pres[k] + "\t";
-              }
-                //System.out.println(str);
-                break;
-              }
+              break;
             }
           }
         }
       }
+      //if recall reaches 1 and no need to continue
+      if(RR==totalRR){
+        break;
+      }
+    }
+
+    for(int k = 0; k < pres.length; k++){
+              str = str + pres[k] + "\t";
+    }
     return str;
-  } 
+  }
+
 
   public static String evaluatePRF(Vector <Integer> results, HashMap < Integer , Double > qr){
     //System.out.println("inside of PRF: check map" + qr.values().size());
@@ -476,8 +454,10 @@ public static double getDCG(double[] gain){
   }
 
   private static void writeToFile(String filepath, String text) throws FileNotFoundException{
-      try(PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filepath, true)))) {
+      try{
+          PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filepath, true)));
           out.print(text);
+          out.close();
       }catch (IOException e) {
           //exception handling left as an exercise for the reader
       }
