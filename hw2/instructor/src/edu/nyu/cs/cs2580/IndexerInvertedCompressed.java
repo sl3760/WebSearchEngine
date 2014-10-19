@@ -74,15 +74,17 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
     this.documents = loaded.documents;
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = documents.size();
+    this.invertedIndex = loaded.invertedIndex;
+
     for(ArrayList<ArrayList<Integer>> list: loaded.invertedIndex.values()){
         for(int i=0;i<list.size();i++){
           this._totalTermFrequency += list.get(i).size()-1;
         }
     }
     
-    this.invertedIndex = loaded.invertedIndex;
+    
     this.pointers = loaded.pointers;
-    this.documents = loaded.documents;
+    
     reader.close();
 
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
@@ -204,7 +206,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
        else{
              ArrayList<Integer> pointer_list = pointers.get(term);
              int pre = pointer_list.indexOf(docid);
-             if(pre == pointer_list.size()-1) 
+             if(pre == pointer_list.size()-1 ) 
                 return -1;
               else return pointer_list.get(pre+1);
 
@@ -222,12 +224,12 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
       words.add(s.next());
     }
 
-    int first = next(words.get(0),docid);
+    int first = nextNoPhase(words.get(0),docid);
     if (first == -1)
      return -1;
    else{
           for(int i =1; i<words.size();i++){
-            int tmp = next(words.get(i),docid);
+            int tmp = nextNoPhase(words.get(i),docid);
             if(tmp == -1) return -1;
             if(tmp !=first) return nextDocForPhase(term, Math.max(first,tmp)-1);
           }
@@ -236,6 +238,20 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
           if(pos != -1 ) return first;
           else return nextDocForPhase(term,first);
    }
+
+  }
+
+  private int nextNoPhase(String term, int docid){
+
+    if(!invertedIndex.containsKey(term)) return -1;
+       else{
+             ArrayList<Integer> pointer_list = pointers.get(term);
+             int pre = pointer_list.indexOf(docid);
+             if(pre == pointer_list.size()-1) 
+                return -1;
+              else return pointer_list.get(pre+1);
+
+       }
 
   }
 
