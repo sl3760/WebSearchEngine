@@ -1,4 +1,7 @@
 package edu.nyu.cs.cs2580;
+import java.util.HashMap;
+
+import java.util.HashMap;
 
 import java.util.HashMap;
 /**
@@ -8,6 +11,11 @@ import java.util.HashMap;
 public class DocumentIndexed extends Document {
   private static final long serialVersionUID = 9184892508124423115L;
 
+<<<<<<< HEAD
+=======
+
+  
+>>>>>>> 6eca5c6f0be625c641721d82c5ba67fdc75886a8
   private HashMap<String, Integer> terms = new HashMap<String,Integer>();
 
   private int totalTerms;
@@ -15,6 +23,7 @@ public class DocumentIndexed extends Document {
   public DocumentIndexed(int docid) {
     super(docid);
     
+<<<<<<< HEAD
   }
 
   public HashMap<String,Integer> getTerms(){
@@ -23,5 +32,21 @@ public class DocumentIndexed extends Document {
 
   public void setTerms(HashMap<String,Integer> maps){
     this.terms = maps;
+=======
+>>>>>>> 6eca5c6f0be625c641721d82c5ba67fdc75886a8
   }
+
+  
+
+  
+
+  public HashMap<String,Integer> getTerms(){
+    return this.terms;
+}
+  public void setTerms(HashMap<String,Integer> maps){
+    this.terms = maps;
+    
+  }
+
+
 }

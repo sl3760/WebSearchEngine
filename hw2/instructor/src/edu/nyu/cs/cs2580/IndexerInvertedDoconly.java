@@ -301,7 +301,11 @@ private int nextTermDocId(String term, int docid){
     return _termCorpusFreq.containsKey(term) ? _termCorpusFreq.get(term) : 0;
   }
 
+<<<<<<< HEAD
   /*
+=======
+  /**
+>>>>>>> 6eca5c6f0be625c641721d82c5ba67fdc75886a8
   @Override
   public int documentTermFrequency(String term, String url) {
     SearchEngine.Check(false, "Not implemented!");
