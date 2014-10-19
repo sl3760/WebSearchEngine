@@ -65,15 +65,16 @@ public class RankerFavorite extends Ranker {
     double docQueryScore = 0.0;
     double querySum = 0.0;
     for(String queryToken: query._tokens){
+        System.out.println(queryToken);
     	int tf = _indexer.documentTermFrequency(queryToken,did);
     	int n = _indexer.numDocs();
     	int dk = _indexer.corpusDocFrequencyByTerm(queryToken);
     	double tf_idf = (double) tf * (1+Math.log((double) n/dk)/Math.log(2));
+        System.out.println(did+" "+n+" "+dk+" "+tf_idf);
     	docQueryScore += tf_idf*queris.get(queryToken);
     	querySum += queris.get(queryToken)*queris.get(queryToken);
     }
     double queryScore = Math.sqrt(querySum);
-    System.out.println(docQueryScore+" "+docScore+" "+queryScore);
     score = docQueryScore/(docScore*queryScore);
 
     return new ScoredDocument(doc, score);

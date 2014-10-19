@@ -22,7 +22,9 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 /**
  * @CS2580: Implement this class for HW2.
  */
-public class IndexerInvertedCompressed extends Indexer {
+public class IndexerInvertedCompressed extends Indexer implements Serializable{
+
+  private static final long serialVersionUID = 4;
 
   private HashMap<String, ArrayList<ArrayList<Integer>>> invertedIndex = new HashMap<String,ArrayList<ArrayList<Integer>>>();
   private HashMap<String, ArrayList<Integer>>  pointers = new HashMap<String, ArrayList<Integer>>();
@@ -80,7 +82,7 @@ public class IndexerInvertedCompressed extends Indexer {
     reader.close();
 
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
-        "with " + Long.toString(_totalTermFrequency) + " terms!");
+        "with " + Long.toString(this._totalTermFrequency) + " terms!");
   }
 
   @Override

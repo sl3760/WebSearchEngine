@@ -19,15 +19,11 @@ public class DocumentIndexed extends Document {
   public DocumentIndexed(int docid) {
     super(docid);
     
-  }
-
-  
-
-  
+  } 
 
   public HashMap<String,Integer> getTerms(){
     return this.terms;
-}
+  }
   public void setTerms(HashMap<String,Integer> maps){
     this.terms = maps;
     
