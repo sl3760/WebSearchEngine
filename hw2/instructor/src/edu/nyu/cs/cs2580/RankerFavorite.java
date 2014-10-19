@@ -41,16 +41,20 @@ public class RankerFavorite extends Ranker {
 
     // Get the document tokens.
     Document doc = _indexer.getDoc(did);
-    double docScore = ((DocumentIndexed) doc).getDocScore();
+    HashMap<String,Integer> termsMap = ((DocumentIndexed) doc).getTerms();
     double sumTerm = 0.0;
-    for(String token: doc.getTerms().keys()){
-    	sumTerm += map.get(token)*map.get(token);
+    for(String token: termsMap.keySet()){
+        int tf = termsMap.get(token);
+        int n = _indexer.numDocs();
+        int dk = _indexer.corpusDocFrequencyByTerm(token);
+        double tf_idf = (double) tf * (1+Math.log((double) n/dk)/Math.log(2));
+    	sumTerm += tf_idf*tf_idf;
     }
-    docScore = Math.sqrt(sumTerm);
+    double docScore = Math.sqrt(sumTerm);
 
     // Score the document using cosine.
     double score = 0.0;
-    HashMap<String,Interger> queris = new HashMap<String,Integer>();
+    HashMap<String,Integer> queris = new HashMap<String,Integer>();
     for(String queryToken: query._tokens){
     	if(queris.containsKey(queryToken)){
     		queris.put(queryToken,queris.get(queryToken)+1);
