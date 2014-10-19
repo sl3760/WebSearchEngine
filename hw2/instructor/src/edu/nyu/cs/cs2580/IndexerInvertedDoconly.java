@@ -71,16 +71,17 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
  //process each document for all terms it conains
   private void processDocument(String content) {
     Scanner s = new Scanner(content).useDelimiter("\t");
-    int docid = _documents.size();
+    int docid = _documents.size();    
+    Document doc = new DocumentIndexed(docid);
     String title = s.next();
-    readTerms(title, docid);
+    readTerms(title, docid, doc.terms);
     //************need to set url
     String url = " ";
     String body = s.next();
-    readTerms(body,docid);
+    readTerms(body,docid, doc.terms);
     s.close();
     //construct a new Document object and add it to documents vector
-    Document doc = new Document(docid);
+
     doc.setTitle(title);
     doc.setUrl(url);
     _documents.add(doc);
@@ -90,7 +91,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   }
 //the input is title and body content. For each term, stem first, and then add to indexedlist, each docid will be added only once
   //also need to update term corpus freqeuncy 
-  private void readTerms(String str, int docid){
+  private void readTerms(String str, int docid, HashMap<String, Integer>() map){
     Scanner scan = new Scanner(str);  // Uses white space by default.
     while (scan.hasNext()) {
       String token = scan.next();
@@ -105,6 +106,11 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
         _indexList.put(s, new Vector<Integer>());
         _indexList.get(s).add(docid);
         _termCorpusFreq.put(s, 1);
+      }
+      if(map.containsKey(s)){
+          map.put(s, map.get(s)+1);
+      }else{
+        map.put(s, 1);
       }
     }
   }
@@ -186,7 +192,7 @@ private String stemming3(String tokens){
 
   @Override
   public Document getDoc(int docid) {
-    return (docid >= _documents.size() || docid < 0) ? null : _documents.get(docid);
+    return (docid >= _documents.size() || docid < 0) ? null : (Document)_documents.get(docid);
   }
 
   /**
@@ -197,8 +203,8 @@ private String stemming3(String tokens){
   public Document nextDoc(Query query, int docid) {
     int nextDocid = nextQueryDocId(query,docid);
     if(nextDocid > -1){
+      return _documents.get(docid);
     }
-
     return null; 
   }
 /**
@@ -299,5 +305,13 @@ private int nextTermDocId(String term, int docid){
   public int documentTermFrequency(String term, String url) {
     SearchEngine.Check(false, "Not implemented!");
     return 0;
+  }
+
+  public int documentTermFrequency(String term, int docid){
+    if(!_indexList.get(term).indexOf(docid)){
+      return -1;
+    }else{
+      return _documents.get(docid).get(term);
+    }
   }
 }
