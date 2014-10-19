@@ -8,31 +8,24 @@ import java.util.HashMap;
 public class DocumentIndexed extends Document {
   private static final long serialVersionUID = 9184892508124423115L;
 
-  private IndexerInvertedCompressed  indexer = null;
-  private HashMap<String, Integer> counts = null;
+  
+  private HashMap<String, Integer> terms = null;
 
   private int totalTerms;
 
-  public DocumentIndexed(int docid, IndexerInvertedCompressed in) {
+  public DocumentIndexed(int docid) {
     super(docid);
-    indexer = in;
+    
   }
 
-  public void setTotalTerms(int i){
-  	this.totalTerms = i;
+  
+
+  public void setTerms(HashMap<String,Integer> maps){
+    this.terms = map;
   }
 
-  public int getTotalTerms(){
-
-  	return totalTerms;
-  }
-
-  public void setCounts(HashMap<String,Integer> map){
-    this.counts = map;
-  }
-
-  public HashMap<String,Integer> getCounts(){
-    return counts;
+  public HashMap<String,Integer> getTerms(){
+    return this.terms;
   }
 
 }

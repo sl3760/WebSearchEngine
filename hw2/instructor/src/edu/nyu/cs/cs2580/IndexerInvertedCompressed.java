@@ -26,7 +26,7 @@ public class IndexerInvertedCompressed extends Indexer {
 
   private HashMap<String, ArrayList<ArrayList<Integer>>> invertedIndex = new HashMap<String,ArrayList<ArrayList<Integer>>>();
   private HashMap<String, ArrayList<Integer>>  pointers = new HashMap<String, ArrayList<Integer>>();
-  private Vector<DocumentIndexed> documents = new Vector<DocumentIndexed>();
+  private Vector<Document> documents = new Vector<Document>();
   
 
   public IndexerInvertedCompressed(Options options) {
@@ -107,15 +107,15 @@ public class IndexerInvertedCompressed extends Indexer {
     HashMap<String,Integer> counts = new HashMap<String,Integer>();
     offset = readPostingList(title,docid,offset,counts);
     offset = readPostingList(body,docid,offset,counts);
-    doc.setTotalTerms(offset+1);
-    doc.setCounts(counts);
+    
+    doc.setTerms(counts);
     documents.add(doc);
     ++_numDocs;
 
     
   }
 
-  private int readPostingList(String content,int docid,int offset,HashMap<String,Integer> counts) {
+  private int readPostingList(String content,int docid,int offset, HashMap<String,Integer> counts) {
     Scanner s = new Scanner(content);  // Uses white space by default.
     while (s.hasNext()) {
       String token = s.next();
@@ -193,7 +193,7 @@ public class IndexerInvertedCompressed extends Indexer {
   }
 
   private int next(String term, int docid){
-    if(term.indexOf("+") ==-1){
+    if(term.indexOf("") ==-1){
        if(!invertedIndex.containsKey(term)) return -1;
        else{
              ArrayList<Integer> pointer_list = pointers.get(term);
@@ -210,7 +210,7 @@ public class IndexerInvertedCompressed extends Indexer {
 
   }
   private int nextDocForPhase(String term, int docid){
-    Scanner s = new Scanner(term).useDelimiter("+");
+    Scanner s = new Scanner(term);
     Vector<String> words = new Vector<String>();
     while(s.hasNext()){
       words.add(s.next());
@@ -234,7 +234,7 @@ public class IndexerInvertedCompressed extends Indexer {
   }
 
   private int nextPhase(String term, int docid,int pos){
-    Scanner s = new Scanner(term).useDelimiter("+");
+    Scanner s = new Scanner(term);
     Vector<String> words = new Vector<String>();
     while(s.hasNext()){
       words.add(s.next());
@@ -299,7 +299,7 @@ public class IndexerInvertedCompressed extends Indexer {
 
   @Override
   public int corpusDocFrequencyByTerm(String term) {
-    if(term.indexOf("+") == -1){
+    if(term.indexOf("") == -1){
     if(invertedIndex.containsKey(term)){
       return invertedIndex.get(term).size();
     }
@@ -321,7 +321,7 @@ public class IndexerInvertedCompressed extends Indexer {
 
   @Override
   public int corpusTermFrequency(String term) {
-    if(term.indexOf("+") == -1){
+    if(term.indexOf("") == -1){
     if(invertedIndex.containsKey(term)){
       int res = 0;
       ArrayList<ArrayList<Integer>> document_list = invertedIndex.get(term);
@@ -348,13 +348,14 @@ public class IndexerInvertedCompressed extends Indexer {
   /**
    * @CS2580: Implement this for bonus points.
    */
-  @Override
-  public int documentTermFrequency(String term, String url) {
-    return 0;
-  }
+ //@Override
+  //public int documentTermFrequency(String term, String url) {
+   // return 0;
+  //}
   
-  public  int getDocumentTermFrequency(String term, int docid){
-      if(term.indexOf("+") ==-1){
+  @Override
+  public  int documentTermFrequency(String term, int docid){
+      if(term.indexOf("") == -1){
       if(docid>=0 && docid<documents.size()){
            HashMap<String,Integer> counts = documents.get(docid).getCounts();
            if(counts.containsKey(term))
