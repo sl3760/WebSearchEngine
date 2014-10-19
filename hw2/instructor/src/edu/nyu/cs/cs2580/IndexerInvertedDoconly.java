@@ -73,17 +73,19 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     Scanner s = new Scanner(content).useDelimiter("\t");
     int docid = _documents.size();    
     DocumentIndexed doc = new DocumentIndexed(docid);
+    HashMap<String,Integer> map = new HashMap<String, Integer>();
     String title = s.next();
-    readTerms(title, docid, doc.getTerms());
+    readTerms(title, docid, map);
     //************need to set url
     String url = " ";
     String body = s.next();
-    readTerms(body,docid, doc.getTerms());
+    readTerms(body,docid, map);
     s.close();
     //construct a new Document object and add it to documents vector
 
     doc.setTitle(title);
     doc.setUrl(url);
+    doc.setTerms(map);
     _documents.add(doc);
 
     //update stats
