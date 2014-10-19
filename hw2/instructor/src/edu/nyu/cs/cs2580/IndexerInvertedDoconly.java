@@ -30,7 +30,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   //stopwords set
   private Set<String> stopwords = new HashSet<String>();
   //raw documents
-  private Vector<Document> _documents = new Vector<Document>();
+  private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
 
    // Provided for serialization
   public IndexerInvertedDoconly() { }
@@ -72,18 +72,20 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   private void processDocument(String content) {
     Scanner s = new Scanner(content).useDelimiter("\t");
     int docid = _documents.size();    
-    Document doc = new DocumentIndexed(docid);
+    DocumentIndexed doc = new DocumentIndexed(docid);
+    HashMap<String,Integer> map = new HashMap<String, Integer>();
     String title = s.next();
-    readTerms(title, docid, doc.terms);
+    readTerms(title, docid, map);
     //************need to set url
     String url = " ";
     String body = s.next();
-    readTerms(body,docid, doc.terms);
+    readTerms(body,docid, map);
     s.close();
     //construct a new Document object and add it to documents vector
 
     doc.setTitle(title);
     doc.setUrl(url);
+    doc.setTerms(map);
     _documents.add(doc);
 
     //update stats
@@ -91,7 +93,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   }
 //the input is title and body content. For each term, stem first, and then add to indexedlist, each docid will be added only once
   //also need to update term corpus freqeuncy 
-  private void readTerms(String str, int docid, HashMap<String, Integer>() map){
+  private void readTerms(String str, int docid, HashMap<String, Integer> map){
     Scanner scan = new Scanner(str);  // Uses white space by default.
     while (scan.hasNext()) {
       String token = scan.next();
@@ -186,8 +188,6 @@ private String stemming3(String tokens){
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
         "with " + Long.toString(_totalTermFrequency) + " terms!");
 
-
-    System.out.println("Test nextDoc() with term 'web': the docId returned is " + nextQueryDocId(new Query("web"), -1));
   }
 
   @Override
@@ -301,17 +301,20 @@ private int nextTermDocId(String term, int docid){
     return _termCorpusFreq.containsKey(term) ? _termCorpusFreq.get(term) : 0;
   }
 
+  /*
   @Override
   public int documentTermFrequency(String term, String url) {
     SearchEngine.Check(false, "Not implemented!");
     return 0;
   }
+  */
 
+  @Override
   public int documentTermFrequency(String term, int docid){
-    if(!_indexList.get(term).indexOf(docid)){
+    if(_indexList.get(term).indexOf(docid)==-1){
       return -1;
     }else{
-      return _documents.get(docid).get(term);
+      return _documents.get(docid).getTerms().get(term);
     }
   }
 }

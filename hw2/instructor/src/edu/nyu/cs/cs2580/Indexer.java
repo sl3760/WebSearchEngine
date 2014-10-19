@@ -117,7 +117,7 @@ public abstract class Indexer {
   public abstract int corpusTermFrequency(String term);
 
   // Number of times {@code term} appeared in the document {@code url}.
-  public abstract int documentTermFrequency(String term, String url);
+  public abstract int documentTermFrequency(String term, int docid);
 
   /**
    * All Indexers must be created through this factory class based on the
