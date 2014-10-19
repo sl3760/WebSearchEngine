@@ -54,9 +54,9 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     } finally {
       reader.close();
     }
-   // for (Integer freq : _termCorpusFreq.values()) {
-    //  this._totalTermFrequency += freq;
-   // }
+    for (Integer freq : _termCorpusFreq.values()) {
+      this._totalTermFrequency += freq;
+    }
     System.out.println(
         "Indexed " + Integer.toString(_documents.size()) + " docs with " +
         Long.toString(this._totalTermFrequency) + " terms.");

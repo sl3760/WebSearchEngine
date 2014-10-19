@@ -75,7 +75,12 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
     this.documents = loaded.documents;
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = documents.size();
-    this._totalTermFrequency = loaded._totalTermFrequency;
+    for(ArrayList<ArrayList<Integer>> list: loaded.invertedIndex.values()){
+        for(int i=0;i<list.size();i++){
+          this._totalTermFrequency += list.get(i).size()-1;
+        }
+    }
+    
     this.invertedIndex = loaded.invertedIndex;
     this.pointers = loaded.pointers;
     this.documents = loaded.documents;
