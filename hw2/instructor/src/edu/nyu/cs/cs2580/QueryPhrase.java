@@ -8,6 +8,8 @@ import java.util.Scanner;
  */
 public class QueryPhrase extends Query {
 
+  private Stemming stemming = new Stemming();
+
   public QueryPhrase(String query) {
     super(query);
   }
@@ -29,15 +31,26 @@ public class QueryPhrase extends Query {
     		if(start.length()!=0){
     			Scanner s = new Scanner(start);
 	    		while(s.hasNext()){
-	    			_tokens.add(s.next());
+            String queryToken = stemming.stem(s.next());
+	    			_tokens.add(queryToken);
 	    		}
 	    		s.close();
-    		}    		
-    		_tokens.add(phrase);
+    		}
+        if(phrase.length()!=0){
+          StringBuilder sb = new StringBuilder();
+          Scanner s = new Scanner(phrase);
+          while(s.hasNext()){
+            String queryToken = stemming.stem(s.next());
+            sb.append(queryToken+" ");
+          }
+          s.close();
+          _tokens.add(sb.toString().trim());
+        }		   		
     		if(last.length()!=0){
     			Scanner s = new Scanner(last);
 	    		while(s.hasNext()){
-	    			_tokens.add(s.next());
+            String queryToken = stemming.stem(s.next());
+	    			_tokens.add(queryToken);
 	    		}
 	    		s.close();
     		}
@@ -45,7 +58,8 @@ public class QueryPhrase extends Query {
     }else {
     	Scanner s = new Scanner(_query);
     	while(s.hasNext()){
-    		_tokens.add(s.next());
+        String queryToken = stemming.stem(s.next());
+    		_tokens.add(queryToken);
     	}
     	s.close();
     } 

@@ -24,6 +24,7 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
  * @CS2580: Implement this class for HW2.
  */
 public class IndexerInvertedCompressed extends Indexer implements Serializable{
+
   private static final long serialVersionUID = 4;
 
   private HashMap<String, ArrayList<ArrayList<Integer>>> invertedIndex = new HashMap<String,ArrayList<ArrayList<Integer>>>();
