@@ -350,13 +350,15 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
       int res = 0;
       ArrayList<ArrayList<Integer>> document_list = invertedIndex.get(term);
       for(int i = 0; i < document_list.size(); i++){
-        res += document_list.get(i).size()-1;
+        ArrayList<Integer> tmp = document_list.get(i);
+        int size = tmp.size()-1;
+        res += size;
+
       }
       return res;
 
     }
-    else
-    return 0;
+    else return 0;
   }
   else{
          int res = 0;
