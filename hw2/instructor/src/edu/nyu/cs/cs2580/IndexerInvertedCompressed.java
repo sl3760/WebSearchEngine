@@ -348,27 +348,16 @@ public class IndexerInvertedCompressed extends Indexer {
   /**
    * @CS2580: Implement this for bonus points.
    */
-<<<<<<< HEAD
  //@Override
   //public int documentTermFrequency(String term, String url) {
    // return 0;
   //}
   
-  @Override
-  public  int documentTermFrequency(String term, int docid){
-      if(term.indexOf("+") == -1){
-=======
-  /**
-  @Override
-  public int documentTermFrequency(String term, String url) {
-    return 0;
-  }
-  */
-  
+ 
   @Override
   public  int getDocumentTermFrequency(String term, int docid){
-      if(term.indexOf("+") ==-1){
->>>>>>> origin/master
+      if(term.indexOf("") ==-1){
+
       if(docid>=0 && docid<documents.size()){
            HashMap<String,Integer> counts = documents.get(docid).getCounts();
            if(counts.containsKey(term))
