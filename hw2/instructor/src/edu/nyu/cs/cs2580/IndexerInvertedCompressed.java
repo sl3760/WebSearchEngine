@@ -16,6 +16,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.Vector;
 import java.util.ArrayList;
+import java.util.*;  
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
@@ -28,6 +29,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
   private HashMap<String, ArrayList<ArrayList<Integer>>> invertedIndex = new HashMap<String,ArrayList<ArrayList<Integer>>>();
   private HashMap<String, ArrayList<Integer>>  pointers = new HashMap<String, ArrayList<Integer>>();
   private Vector<DocumentIndexed> documents = new Vector<DocumentIndexed>();
+  private Vector<String> stopwords = new Vector<String>();
   
 
   public IndexerInvertedCompressed(Options options) {
@@ -93,7 +95,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
 
   @Override
   public Document getDoc(int docid) {
-    return documents.get(docid);
+    return (Document)documents.get(docid);
   }
 
   /**
@@ -447,5 +449,32 @@ private String stemming3(String tokens){
 
   }
 }
+
+   private void getStopWords(){
+    List<Map.Entry<String, ArrayList<ArrayList<Integer>>>> infoIds = new ArrayList<Map.Entry<String, ArrayList<ArrayList<Integer>>>>(invertedIndex.entrySet());  
+  
+         
+          
+          
+        Collections.sort(infoIds, new Comparator<Map.Entry<String, ArrayList<ArrayList<Integer>>>>() {  
+            public int compare(Map.Entry<String, ArrayList<ArrayList<Integer>>> o1,  
+                    Map.Entry<String, ArrayList<ArrayList<Integer>>> o2) {  
+                int a = o1.getValue().size();
+                int b = o2.getValue().size();
+                return b-a;
+                //return Integer.toString(a).compareTo(Integer.toString(b));
+            }  
+        });  
+  
+          
+        for (int i = 0; i < 50; i++) {  
+            String word = infoIds.get(i).getKey().toString();  
+            stopwords.add(word);
+        }  
+
+
+
+
+   }
 
 }
