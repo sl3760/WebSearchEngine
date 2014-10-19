@@ -220,8 +220,15 @@ class IndexerFullScan extends Indexer implements Serializable {
         _termCorpusFrequency.get(_dictionary.get(term)) : 0;
   }
 
+  /**
   @Override
   public int documentTermFrequency(String term, String url) {
+    SearchEngine.Check(false, "Not implemented!");
+    return 0;
+  }
+  */
+  @Override
+  public int documentTermFrequency(String term, int docID) {
     SearchEngine.Check(false, "Not implemented!");
     return 0;
   }
