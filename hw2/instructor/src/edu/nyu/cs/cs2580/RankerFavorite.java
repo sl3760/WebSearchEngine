@@ -73,6 +73,7 @@ public class RankerFavorite extends Ranker {
     	querySum += queris.get(queryToken)*queris.get(queryToken);
     }
     double queryScore = Math.sqrt(querySum);
+    System.out.println(docQueryScore+" "+docScore+" "+queryScore);
     score = docQueryScore/(docScore*queryScore);
 
     return new ScoredDocument(doc, score);

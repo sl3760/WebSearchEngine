@@ -16,6 +16,10 @@ public class DocumentIndexed extends Document {
     super(docid);
   }
 
+  public void setTerms(HashMap<String, Integer> maps){
+  	this.terms = maps;
+  }
+
   public HashMap<String, Integer> getTerms(){
   	return this.terms;
   }
