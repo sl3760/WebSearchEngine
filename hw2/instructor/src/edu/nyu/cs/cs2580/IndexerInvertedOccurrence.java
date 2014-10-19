@@ -315,9 +315,8 @@ private int nextPhraseDocId(String[] tokens, int docid, int pos){
     if(nextPhrasePosition(tokens, docid, pos) > -1){
       return nextId;
     }
-  }else{  
-    return -1;
   }
+  return -1;
 }
 
 private int nextPhrasePosition(String[] tokens, int docid, int pos){
@@ -429,7 +428,6 @@ private int nextTermPosition(String term, int docid, int pos){
 
   }
 
-  /**
   @Override
   public int documentTermFrequency(String term, int docid) {
     String[] tokens = term.split(" ");
@@ -445,18 +443,7 @@ private int nextTermPosition(String term, int docid, int pos){
     }
 
   }
-<<<<<<< HEAD
 
-
-=======
-  */
-  
-  @Override
-  public int documentTermFrequency(String term, int docID) {
-    SearchEngine.Check(false, "Not implemented!");
-    return 0;
-  }
->>>>>>> 6eca5c6f0be625c641721d82c5ba67fdc75886a8
 //**************************************************** auxilary functions
   //check if docids returned for all query terms are same 
   private boolean isEqual(int[] numbers){

@@ -254,7 +254,7 @@ private int nextTermDocId(String term, int docid){
     return _termCorpusFreq.containsKey(term) ? _termCorpusFreq.get(term) : 0;
   }
 
-<<<<<<< HEAD
+
   /*
 =======
   /**
