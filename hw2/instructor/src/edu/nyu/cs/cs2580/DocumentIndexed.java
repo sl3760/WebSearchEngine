@@ -27,20 +27,11 @@ public class DocumentIndexed extends Document {
 
   public HashMap<String,Integer> getTerms(){
     return this.terms;
-=======
-  private HashMap<String, Integer> terms = new HashMap<String, Integer>();
 
-  public DocumentIndexed(int docid) {
-    super(docid);
   }
-
-  public void setTerms(HashMap<String, Integer> maps){
-  	this.terms = maps;
-  }
-
-  public HashMap<String, Integer> getTerms(){
-  	return this.terms;
->>>>>>> origin/master
+  public void setTerms(HashMap<String,Integer> maps){
+    this.terms = maps;
+    
   }
 
 }
