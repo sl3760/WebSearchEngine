@@ -26,7 +26,7 @@ public class IndexerInvertedCompressed extends Indexer {
 
   private HashMap<String, ArrayList<ArrayList<Integer>>> invertedIndex = new HashMap<String,ArrayList<ArrayList<Integer>>>();
   private HashMap<String, ArrayList<Integer>>  pointers = new HashMap<String, ArrayList<Integer>>();
-  private Vector<Document> documents = new Vector<Document>();
+  private Vector<DocumentIndexed> documents = new Vector<DocumentIndexed>();
   
 
   public IndexerInvertedCompressed(Options options) {
@@ -101,7 +101,7 @@ public class IndexerInvertedCompressed extends Indexer {
     String body = s.next();
     s.close();
 
-    DocumentIndexed doc = new DocumentIndexed(documents.size(), this);
+    DocumentIndexed doc = new DocumentIndexed(documents.size());
     doc.setTitle(title);
     int docid = doc._docid;
     HashMap<String,Integer> counts = new HashMap<String,Integer>();
@@ -348,16 +348,7 @@ public class IndexerInvertedCompressed extends Indexer {
   /**
    * @CS2580: Implement this for bonus points.
    */
-<<<<<<< HEAD
- //@Override
-  //public int documentTermFrequency(String term, String url) {
-   // return 0;
-  //}
-  
-  @Override
-  public  int documentTermFrequency(String term, int docid){
-      if(term.indexOf("+") == -1){
-=======
+
   /**
   @Override
   public int documentTermFrequency(String term, String url) {
@@ -366,11 +357,10 @@ public class IndexerInvertedCompressed extends Indexer {
   */
   
   @Override
-  public  int getDocumentTermFrequency(String term, int docid){
-      if(term.indexOf("+") ==-1){
->>>>>>> origin/master
+  public  int documentTermFrequency(String term, int docid){
+      if(term.indexOf("") ==-1){
       if(docid>=0 && docid<documents.size()){
-           HashMap<String,Integer> counts = documents.get(docid).getCounts();
+           HashMap<String,Integer> counts = documents.get(docid).getTerms();
            if(counts.containsKey(term))
              return counts.get(term);
            else return 0;
