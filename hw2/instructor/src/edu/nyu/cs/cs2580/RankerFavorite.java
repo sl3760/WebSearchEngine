@@ -57,7 +57,6 @@ public class RankerFavorite extends Ranker {
     HashMap<String,Integer> queris = new HashMap<String,Integer>();
 
     for(String queryToken: query._tokens){
-        System.out.println(queryToken);
     	if(queris.containsKey(queryToken)){
     		queris.put(queryToken,queris.get(queryToken)+1);
     	}else{
