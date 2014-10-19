@@ -113,6 +113,17 @@ class QueryHandler implements HttpHandler {
     }
     response.append(response.length() > 0 ? "\n" : "");
   }
+   
+  private void constructHTMLOutput(
+      final Vector<ScoredDocument> docs, StringBuffer response) {
+    response.append("<html><body>");
+    for (ScoredDocument doc : docs) {
+      response.append(response.length() > 0 ? "\n" : "");
+      response.append(doc.asTextResult());
+    }
+    response.append(response.length() > 0 ? "\n" : "");
+    response.append("</body></html>");
+  }
 
   public void handle(HttpExchange exchange) throws IOException {
     String requestMethod = exchange.getRequestMethod();
@@ -130,6 +141,7 @@ class QueryHandler implements HttpHandler {
 
     // Validate the incoming request.
     String uriQuery = exchange.getRequestURI().getQuery();
+    uriQuery = uriQuery.replace('+',' ');
     String uriPath = exchange.getRequestURI().getPath();
     if (uriPath == null || uriQuery == null) {
       respondWithMsg(exchange, "Something wrong with the URI!");
@@ -154,7 +166,7 @@ class QueryHandler implements HttpHandler {
     }
 
     // Processing the query.
-    Query processedQuery = new Query(cgiArgs._query);
+    QueryPhrase processedQuery = new QueryPhrase(cgiArgs._query);
     processedQuery.processQuery();
 
     // Ranking.
@@ -167,6 +179,7 @@ class QueryHandler implements HttpHandler {
       break;
     case HTML:
       // @CS2580: Plug in your HTML output
+      constructHTMLOutput(scoredDocs, response);
       break;
     default:
       // nothing
