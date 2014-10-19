@@ -38,7 +38,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
   //stopwords set
   private Set<String> stopwords = new HashSet<String>();
   //raw documents
-  private Vector<Document> _documents = new Vector<Document>();
+  private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
 
    // Provided for serialization
   public IndexerInvertedOccurrence(){ }
@@ -82,25 +82,28 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
 //process each document for all terms it conains
   private void processDocument(String content) {
     Scanner s = new Scanner(content).useDelimiter("\t");
-    int docid = _documents.size();
+    int docid = _documents.size();    
+    DocumentIndexed doc = new DocumentIndexed(docid);
+    HashMap<String, Integer> maps = new HashMap<String, Integer>();
     int pos = 0;
     String title = s.next();
-    pos = readTerms(title, docid, pos);
+    pos = readTerms(title, docid, pos, maps);
     //************need to set url
     String url = " ";
     String body = s.next();
-    pos = readTerms(body,docid, pos);
+    pos = readTerms(body,docid, pos, maps);
     s.close();
     //construct a new Document object and add it to documents vector
-    Document doc = new Document(docid);
+
     doc.setTitle(title);
     doc.setUrl(url);
+    doc.setTerms(maps);
     _documents.add(doc);
 
   }
 //the input is title and body content. For each term, stem first, and then add to indexedlist, each docid will be added only once
   //also need to update term corpus freqeuncy 
-  private int readTerms(String str, int did, int pos){
+  private int readTerms(String str, int did, int pos, HashMap<String, Integer> map){
     Scanner scan = new Scanner(str);  // Uses white space by default.
     while (scan.hasNext()) {
       String token = scan.next();
@@ -122,6 +125,11 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
         Vector<Integer> occs = new Vector<Integer>();
         occs.add(pos);
         _indexList.get(s).get(0)._pos = occs;
+      }
+      if(map.containsKey(s)){
+        map.put(s, map.get(s)+1);
+      }else{
+        map.put(s, 1);
       }
       pos++;
     }
@@ -204,7 +212,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
 
   @Override
   public Document getDoc(int docid) {
-    return (docid >= _documents.size() || docid < 0) ? null : _documents.get(docid);
+    return (docid >= _documents.size() || docid < 0) ? null : (Document)_documents.get(docid);
   }
 
   /**
@@ -212,7 +220,11 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
    */
   @Override
   public Document nextDoc(Query query, int docid) {
-    return null;
+    int nextDocid = nextQueryDocId(query,docid);
+    if(nextDocid > -1){
+      return _documents.get(docid);
+    }
+    return null; 
   }
 
   /**
@@ -300,24 +312,41 @@ private int nextMultiTermDocId(String[] tokens, int docid){
 private int nextPhraseDocId(String[] tokens, int docid, int pos){
   int nextId = nextMultiTermDocId(tokens,docid);
   if(nextId > -1){
-    int first = nextTermPosition(tokens[0],docid,pos);
-        if(first == -1){
-          return -1;
-        }else{ 
-             for(int i =1;i<tokens.length;i++){
-                  int tmp = nextTermPosition(tokens[i],docid,pos);
-                  if(tmp == -1)
-                       return -1;
-                  if (tmp != first+1)
-                    return nextPhraseDocId(tokens,docid,first);
-                  else 
-                    first = tmp;
-             }   
-        }
-    return docid;
+    if(nextPhrasePosition(tokens, docid, pos) > -1){
+      return nextId;
+    }
   }else{  
     return -1;
   }
+}
+
+private int nextPhrasePosition(String[] tokens, int docid, int pos){
+    int first = nextTermPosition(tokens[0],docid,pos);
+    if(first == -1){
+      return -1;
+    }else{ 
+         for(int i =1;i<tokens.length;i++){
+              int tmp = nextTermPosition(tokens[i],docid,pos);
+              if(tmp == -1)
+                   return -1;
+              if (tmp != first+1)
+                return nextPhraseDocId(tokens,docid,first);
+              else 
+                first = tmp;
+         }   
+    }
+    return first;
+}
+
+private int phraseFrequencyInDoc(String[] phase, int docid){
+    int res = 0;
+    int pos = -1;
+    pos = nextPhrasePosition(phase,docid,-1);
+    while(pos !=-1){
+      res++;
+      pos = nextPhrasePosition(phase,docid,pos);
+    }
+    return res;
 }
 
 private int findDocPosition(Vector<DocOcc> list, int docid){
@@ -353,29 +382,70 @@ private int nextTermPosition(String term, int docid, int pos){
 
   @Override
   public int corpusDocFrequencyByTerm(String term) {
-    if(_indexList.containsKey(term)){
-      return _indexList.get(term).size();
+    String[] tokens = term.split(" ");
+    if(tokens.length==1){
+        if(_indexList.containsKey(term)){
+          return _indexList.get(term).size();
+        }else{
+          return 0;
+        }
+    }else{
+      //process phrase
+      int res=0;
+
+      int docid = nextPhraseDocId(tokens, -1, -1);
+      while(docid !=-1){
+           res++;
+          docid = nextPhraseDocId(tokens,docid, -1);
+      }
+      return res;
     }
-    return 0;
+
   }
 
   @Override
   public int corpusTermFrequency(String term) {
-    if(_indexList.containsKey(term)){
-      int sum = 0;
-      for(int i = 0; i< _indexList.get(term).size(); i++){
-        sum += _indexList.get(term).get(i)._pos.size();
+    String[] tokens = term.split(" ");
+    if(tokens.length == 1){
+      if(_indexList.containsKey(term)){
+        int sum = 0;
+        for(int i = 0; i< _indexList.get(term).size(); i++){
+          sum += _indexList.get(term).get(i)._pos.size();
+        }
+        return sum;
+      }else{
+        return 0;
       }
-      return sum;
+    }else{
+      //process phrase
+      int res = 0;
+       int docid = nextPhraseDocId(tokens,-1, -1);
+       while(docid !=-1){
+        res += phraseFrequencyInDoc(tokens,docid);
+        docid = nextPhraseDocId(tokens,docid, -1);
+       }
+       return res;
     }
-    return 0;
+
   }
 
   @Override
-  public int documentTermFrequency(String term, String url) {
-    SearchEngine.Check(false, "Not implemented!");
-    return 0;
+  public int documentTermFrequency(String term, int docid) {
+    String[] tokens = term.split(" ");
+    if(tokens.length == 1){
+      if(_indexList.get(term).indexOf(docid)==-1){
+        return -1;
+      }else{
+        return _documents.get(docid).getTerms().get(term);
+      }
+    }else{
+      //return phrase frequency
+      return phraseFrequencyInDoc(tokens,docid);
+    }
+
   }
+
+
 //**************************************************** auxilary functions
   //check if docids returned for all query terms are same 
   private boolean isEqual(int[] numbers){
