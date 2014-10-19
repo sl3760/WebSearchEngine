@@ -1,4 +1,5 @@
 package edu.nyu.cs.cs2580;
+import java.util.HashMap;
 
 import java.util.HashMap;
 
@@ -18,4 +19,5 @@ public class DocumentIndexed extends Document {
   public HashMap<String, Integer> getTerms(){
   	return this.terms;
   }
+
 }
