@@ -22,7 +22,8 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 /**
  * @CS2580: Implement this class for HW2.
  */
-public class IndexerInvertedCompressed extends Indexer {
+public class IndexerInvertedCompressed extends Indexer implements Serializable{
+  private static final long serialVersionUID = 4;
 
   private HashMap<String, ArrayList<ArrayList<Integer>>> invertedIndex = new HashMap<String,ArrayList<ArrayList<Integer>>>();
   private HashMap<String, ArrayList<Integer>>  pointers = new HashMap<String, ArrayList<Integer>>();
@@ -73,14 +74,19 @@ public class IndexerInvertedCompressed extends Indexer {
     this.documents = loaded.documents;
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = documents.size();
-    this._totalTermFrequency = loaded._totalTermFrequency;
+    for(ArrayList<ArrayList<Integer>> list: loaded.invertedIndex.values()){
+        for(int i=0;i<list.size();i++){
+          this._totalTermFrequency += list.get(i).size()-1;
+        }
+    }
+    
     this.invertedIndex = loaded.invertedIndex;
     this.pointers = loaded.pointers;
     this.documents = loaded.documents;
     reader.close();
 
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
-        "with " + Long.toString(_totalTermFrequency) + " terms!");
+        "with " + Long.toString(this._totalTermFrequency) + " terms!");
   }
 
   @Override
