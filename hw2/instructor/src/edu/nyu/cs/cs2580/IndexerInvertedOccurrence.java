@@ -40,6 +40,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
   //raw documents
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
 
+  private Stemming stemming = new Stemming();
+
    // Provided for serialization
   public IndexerInvertedOccurrence(){ }
 
@@ -99,6 +101,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
     doc.setUrl(url);
     doc.setTerms(maps);
     _documents.add(doc);
+    doc.setDocID(docid);
 
   }
 //the input is title and body content. For each term, stem first, and then add to indexedlist, each docid will be added only once
@@ -107,7 +110,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
     Scanner scan = new Scanner(str);  // Uses white space by default.
     while (scan.hasNext()) {
       String token = scan.next();
-      String s = stemming(token);
+      String s = stemming.stem(token);
       if (_indexList.containsKey(s)) {
         //check if the docid is already added
         if(did != _indexList.get(s).lastElement().docid){
@@ -135,53 +138,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
     }
     return pos;
   }
-//Tokens are stemmed with Step 1 of the Porter's algorithm  
- private String stemming(String tokens){
-    return stemming3(stemming2(stemming1(tokens)));
-  }
-  
-//step 1, get rid of plurals
-  private String stemming1(String tokens){
-    if(tokens.length() > 1){
-      if(tokens.endsWith("s")){
-        if(tokens.charAt(tokens.length()-2) == 's'){
-          return tokens;
-        }else if(tokens.charAt(tokens.length()-2) =='e'){
-          //need to determine if "es" are plural, check if -ch,-x, -s or -ss
-          if(tokens.length()>3){
-            if(tokens.charAt(tokens.length()-3) == 'x' || tokens.charAt(tokens.length()-3) == 's' || 
-                  tokens.substring(tokens.length()-4, tokens.length()-2).equals("ch")){
-              tokens = tokens.substring(0, tokens.length()-2); //remove "es"
-              return tokens; 
-            }
-          }
-        }
-      tokens = tokens.substring(0, tokens.length()-1);
-      }
-    } 
-    return tokens;
-  }
-//step 2 remove ed(ly) and ing(ly)
-  private String stemming2(String tokens){
-    if(tokens.endsWith("ed")){
-      tokens = tokens.substring(0, tokens.length()-2);
-    }else if(tokens.endsWith("edly")){
-      tokens = tokens.substring(0, tokens.length()-4);
-    }else if(tokens.endsWith("ing")){
-      tokens = tokens.substring(0, tokens.length()-3);    
-    }else if(tokens.endsWith("ingly")){
-      tokens = tokens.substring(0, tokens.length()-5);
-    }
-    return tokens;
-  }
-//step3 turns –y to –i
-  private String stemming3(String tokens){
-    if(tokens.endsWith("y")){
-      return tokens.substring(0, tokens.length()-1) + "i";
-    }
-    return tokens;
-  }  
-
 
 
   @Override
@@ -222,7 +178,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
   public Document nextDoc(Query query, int docid) {
     int nextDocid = nextQueryDocId(query,docid);
     if(nextDocid > -1){
-      return _documents.get(docid);
+      return _documents.get(nextDocid);
     }
     return null; 
   }
@@ -231,7 +187,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
  *find next document id for given query which might contain conjuctive terms or phrase+terms, return -1 if there is no next doc
  */
 private int nextQueryDocId(Query query, int docid){
-  query.processQuery();
+  //query.processQuery();
   if(query._tokens.size()==1){
     return nextTermDocId(query._tokens.get(0),docid);
   }else if(query._tokens.size() > 1){
@@ -247,7 +203,7 @@ private int nextQueryDocId(Query query, int docid){
       return docs[0];
     }else{
       int max = findMaxId(docs);
-      nextQueryDocId(query,max-1);
+      return nextQueryDocId(query,max-1);
     }
   }
   return -1;
@@ -311,31 +267,39 @@ private int nextMultiTermDocId(String[] tokens, int docid){
 //given a phrase, first find the next docid where all terms in this phrase appear, then determine if the position is consective
 private int nextPhraseDocId(String[] tokens, int docid, int pos){
   int nextId = nextMultiTermDocId(tokens,docid);
+
   if(nextId > -1){
-    if(nextPhrasePosition(tokens, docid, pos) > -1){
-      return nextId;
+    while(nextId > -1){
+      if(nextPhrasePosition(tokens, nextId, pos) > -1){
+        return nextId;
+      }else{
+        nextId = nextMultiTermDocId(tokens,nextId);
+      }
     }
-  }else{  
-    return -1;
+
   }
+  return -1;
 }
 
 private int nextPhrasePosition(String[] tokens, int docid, int pos){
     int first = nextTermPosition(tokens[0],docid,pos);
+    System.out.println("first pos is " + first);
     if(first == -1){
       return -1;
     }else{ 
          for(int i =1;i<tokens.length;i++){
-              int tmp = nextTermPosition(tokens[i],docid,pos);
+              int tmp = nextTermPosition(tokens[i],docid,first);
+              System.out.println("next pos is " + tmp);
               if(tmp == -1)
                    return -1;
               if (tmp != first+1)
                 return nextPhraseDocId(tokens,docid,first);
               else 
                 first = tmp;
-         }   
+         }  
+      return first;        
     }
-    return first;
+
 }
 
 private int phraseFrequencyInDoc(String[] phase, int docid){
@@ -350,26 +314,26 @@ private int phraseFrequencyInDoc(String[] phase, int docid){
 }
 
 private int findDocPosition(Vector<DocOcc> list, int docid){
+  System.out.println("findDocPosition for docid " + docid);
   int left = 0;
-  int right = list.size()-1;
-  int curPos = -1;
-  while(left<=right){
+  int right = list.size();
+  while(right - left > 1){
     int mid = (left+right) /2;
-    if(list.get(mid).docid == docid){
-      curPos = mid;
-      break;
-    }else if(list.get(mid).docid < docid){
-      left = mid+1;
+    if(list.get(mid).docid <= docid){
+      left = mid;
     }else{
-      right = mid-1;
+      right = mid;
     }
   }
-  return curPos;
+  System.out.println("return position " + right);
+  return right;
 }
 
 private int nextTermPosition(String term, int docid, int pos){
+  System.out.println("enter nextTermPosition");
   int index = findDocPosition(_indexList.get(term),docid);
   Vector<Integer> list = _indexList.get(term).get(index)._pos;
+  System.out.println("_pos list size is " + list.size());
   if(list.size()==0 || list.lastElement()<=pos){
     return -1;
   }else if(pos < list.get(0)){
@@ -429,39 +393,28 @@ private int nextTermPosition(String term, int docid, int pos){
 
   }
 
-  /**
   @Override
   public int documentTermFrequency(String term, int docid) {
     String[] tokens = term.split(" ");
     if(tokens.length == 1){
-      if(_indexList.get(term).indexOf(docid)==-1){
-        return -1;
-      }else{
+      //if(_indexList.get(term).indexOf(docid)==-1){
+      //  return -1;
+      //}else{
         return _documents.get(docid).getTerms().get(term);
-      }
+      //}
     }else{
       //return phrase frequency
       return phraseFrequencyInDoc(tokens,docid);
     }
 
   }
-<<<<<<< HEAD
 
 
-=======
-  */
-  
-  @Override
-  public int documentTermFrequency(String term, int docID) {
-    SearchEngine.Check(false, "Not implemented!");
-    return 0;
-  }
->>>>>>> 6eca5c6f0be625c641721d82c5ba67fdc75886a8
 //**************************************************** auxilary functions
   //check if docids returned for all query terms are same 
   private boolean isEqual(int[] numbers){
     if(numbers.length !=0){
-      for(int i =0; i<numbers.length; i++){
+      for(int i =0; i<numbers.length-1; i++){
         if(numbers[i]!=numbers[i+1]){
           return false;
         }
@@ -475,10 +428,8 @@ private int nextTermPosition(String term, int docid, int pos){
       int size = numbers.length;
       int max = numbers[0];
       for(int i = 1; i<size; i++){
-        if(numbers[i] > numbers[i-1]){
-          if(numbers[i]>numbers[max]){
-            max = numbers[i];
-          }
+        if(numbers[i]>max){
+          max = numbers[i];
         }
       }
       return max;

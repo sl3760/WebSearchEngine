@@ -89,6 +89,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
     doc.setUrl(url);
     doc.setTerms(map);
     _documents.add(doc);
+    doc.setDocID(docid);
 
     //update stats
 
@@ -156,7 +157,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
   public Document nextDoc(Query query, int docid) {
     int nextDocid = nextQueryDocId(query,docid);
     if(nextDocid > -1){
-      return _documents.get(docid);
+      return _documents.get(nextDocid);
     }
     return null; 
   }
@@ -164,7 +165,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable{
  *find next document id for given conjunctive query which might contain multiple words, return -1 if there is no next doc
  */
 private int nextQueryDocId(Query query, int docid){
-  query.processQuery();
+  //query.processQuery();
   //System.out.println("inside of nextQueryDocId, the query size is " + query._tokens.size());
   if(query._tokens.size()==1){
     return nextTermDocId(query._tokens.get(0),docid);
@@ -181,7 +182,7 @@ private int nextQueryDocId(Query query, int docid){
       return docs[0];
     }else{
       int max = findMaxId(docs);
-      nextQueryDocId(query,max-1);
+      return nextQueryDocId(query,max-1);
     }
   }
   return -1;
@@ -190,7 +191,7 @@ private int nextQueryDocId(Query query, int docid){
 //check if docids returned for all query terms are same 
 private boolean isEqual(int[] numbers){
   if(numbers.length > 1){
-    for(int i =0; i<numbers.length; i++){
+    for(int i =0; i<numbers.length-1; i++){
       if(numbers[i]!=numbers[i+1]){
         return false;
       }
@@ -204,10 +205,8 @@ private int findMaxId(int[] numbers){
     int size = numbers.length;
     int max = numbers[0];
     for(int i = 1; i<size; i++){
-      if(numbers[i] > numbers[i-1]){
-        if(numbers[i]>numbers[max]){
-          max = numbers[i];
-        }
+      if(numbers[i]>max){
+        max = numbers[i];
       }
     }
     return max;
@@ -254,11 +253,8 @@ private int nextTermDocId(String term, int docid){
     return _termCorpusFreq.containsKey(term) ? _termCorpusFreq.get(term) : 0;
   }
 
-<<<<<<< HEAD
-  /*
-=======
+
   /**
->>>>>>> 6eca5c6f0be625c641721d82c5ba67fdc75886a8
   @Override
   public int documentTermFrequency(String term, String url) {
     SearchEngine.Check(false, "Not implemented!");
