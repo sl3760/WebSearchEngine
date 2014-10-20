@@ -205,7 +205,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
   }
 
   private int next(String term, int docid){
-    if(term.indexOf("") ==-1){
+    if(term.indexOf(" ") ==-1){
        if(!invertedIndex.containsKey(term)) return -1;
        else{
              ArrayList<Integer> pointer_list = pointers.get(term);
@@ -325,7 +325,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
 
   @Override
   public int corpusDocFrequencyByTerm(String term) {
-    if(term.indexOf("") == -1){
+    if(term.indexOf(" ") == -1){
     if(invertedIndex.containsKey(term)){
       return invertedIndex.get(term).size();
     }
@@ -347,7 +347,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
 
   @Override
   public int corpusTermFrequency(String term) {
-    if(term.indexOf("") == -1){
+    if(term.indexOf(" ") == -1){
     if(invertedIndex.containsKey(term)){
       int res = 0;
       ArrayList<ArrayList<Integer>> document_list = invertedIndex.get(term);
@@ -433,7 +433,7 @@ private String stemming3(String tokens){
   
   @Override
   public  int documentTermFrequency(String term, int docid){
-      if(term.indexOf("") ==-1){
+      if(term.indexOf(" ") ==-1){
       if(docid>=0 && docid<documents.size()){
            HashMap<String,Integer> counts = documents.get(docid).getTerms();
            if(counts.containsKey(term))
