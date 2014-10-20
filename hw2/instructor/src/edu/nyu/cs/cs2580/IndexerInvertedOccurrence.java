@@ -276,7 +276,6 @@ private int nextPhraseDocId(String[] tokens, int docid, int pos){
         nextId = nextMultiTermDocId(tokens,nextId);
       }
     }
-
   }
   return -1;
 }
@@ -408,7 +407,6 @@ private int nextTermPosition(String term, int docid, int pos){
     }
 
   }
-
 
 //**************************************************** auxilary functions
   //check if docids returned for all query terms are same 
