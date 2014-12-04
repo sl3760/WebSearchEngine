@@ -119,7 +119,7 @@ public abstract class Indexer {
   // Number of times {@code term} appeared in the document {@code url}.
 
   //public abstract int documentTermFrequency(String term, String url);
-  public abstract int documentTermFrequency(String term, int docID);
+  public abstract int documentTermFrequency(String term, String url);
 
 
   /**

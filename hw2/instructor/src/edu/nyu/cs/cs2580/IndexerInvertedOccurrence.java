@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -14,8 +15,27 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.Vector;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Iterator;
-
+import java.util.Map.Entry;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.select.Elements;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.Writer;
+import java.io.Reader;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.File;
+import java.lang.ProcessBuilder;
+//import org.apache.commons.io.IOUtils;
+//import org.codehaus.jackson.map.ObjectMapper;
+//import org.codehaus.jackson.JsonParseException;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 /**
@@ -39,8 +59,13 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
   private Set<String> stopwords = new HashSet<String>();
   //raw documents
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
-
+  final int DOC_WRITE_SIZE = 100;
+  final int maxFileNum = 1000;
+  //private HashMap<Integer, DocumentIndexed> _documents = new HashMap<Integer, DocumentIndexed>();
   private Stemming stemming = new Stemming();
+
+  //map url to docid
+  Map<String,Integer> _docIDs = new HashMap<String,Integer>();
 
    // Provided for serialization
   public IndexerInvertedOccurrence(){ }
@@ -49,8 +74,12 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
     super(options);
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
   }
+  //temp storage for documents
+  private HashMap<Integer,DocumentIndexed>_docCache = new HashMap<Integer,DocumentIndexed>(100);
+
 
   @Override
+  /*
   public void constructIndex() throws IOException {
     String corpusFile = _options._corpusPrefix + "/corpus.tsv";
     System.out.println("Construct index from: " + corpusFile);
@@ -79,22 +108,75 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
         new ObjectOutputStream(new FileOutputStream(indexFile));
     writer.writeObject(this);
     writer.close();
+  } */
+    public void constructIndex() throws IOException{
+
+    int fileCount = 0;    
+
+    File corpusDirectory = new File(_options._corpusPrefix);
+         System.out.println("Construct index from: " + corpusDirectory);      
+    int fileId = 0;
+    int docFileId = 0;
+    if(corpusDirectory.isDirectory()){
+      for(File corpusFile :corpusDirectory.listFiles()){
+        //processDocument(corpusFile);  
+        org.jsoup.nodes.Document doc = Jsoup.parse(corpusFile, "UTF-8");
+        String title = doc.title().replaceAll(" - Wikipedia, the free encyclopedia", "");
+        String body = doc.body().text().replace(title + " From Wikipedia, the free encyclopedia Jump to: navigation, search ", 
+            " ").replaceAll("[^a-zA-Z0-9]", " ");
+        processDocument(title, body);
+        fileCount++;
+
+        if(fileCount>0&&fileCount%maxFileNum==0){
+          fileId++;
+          String indexFile = _options._indexPrefix+ "/corpus"+fileId+".idx";
+          saveIndex(indexFile);
+        }
+        if(fileCount>0&&fileCount%DOC_WRITE_SIZE==0){
+          docFileId++;
+          String indexFile = _options._indexPrefix+ "/corpus"+fileId+".idx";
+          saveDocList(docFileId);
+        }
+        
+      }
+    }
+    for(Vector<DocOcc> v: _indexList.values()){
+      for(int i = 0; i<v.size(); i++){
+        this._totalTermFrequency += v.get(i)._pos.size();
+      }
+    }
+    _docIDs.put("_numDocs", _numDocs);
+    _docIDs.put("_totalTermFrequency", (int)_totalTermFrequency);
+    System.out.println(
+        "Indexed " + Integer.toString(_documents.size()) + " docs with " +
+        Long.toString(this._totalTermFrequency) + " terms.");
+    saveDocURL();
+    saveDocList(++docFileId);
+    System.gc();
+    String indexFile = _options._indexPrefix+ "/corpus"+(++fileId)+".idx";
+    saveIndex(indexFile);
+    try{
+        mergeIndex();
+        }catch(ClassNotFoundException e){
+
+        }
+    System.out.println("finish write");
   }
 
 //process each document for all terms it conains
-  private void processDocument(String content) {
-    Scanner s = new Scanner(content).useDelimiter("\t");
+  private void processDocument(String title, String body) {
+    //Scanner s = new Scanner(content).useDelimiter("\t");
     int docid = _documents.size();    
     DocumentIndexed doc = new DocumentIndexed(docid);
     HashMap<String, Integer> maps = new HashMap<String, Integer>();
     int pos = 0;
-    String title = s.next();
+    //String title = s.next();
     pos = readTerms(title, docid, pos, maps);
     //************need to set url
-    String url = " ";
-    String body = s.next();
+    String url = title;
+    //String body = s.next();
     pos = readTerms(body,docid, pos, maps);
-    s.close();
+    //s.close();
     //construct a new Document object and add it to documents vector
 
     doc.setTitle(title);
@@ -102,6 +184,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
     doc.setTerms(maps);
     _documents.add(doc);
     doc.setDocID(docid);
+    _docIDs.put(url,docid);
 
   }
 //the input is title and body content. For each term, stem first, and then add to indexedlist, each docid will be added only once
@@ -141,7 +224,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
 
 
   @Override
-  public void loadIndex() throws IOException, ClassNotFoundException {
+ /* public void loadIndex() throws IOException, ClassNotFoundException {
     String indexFile = _options._indexPrefix + "/corpus.idx";
     System.out.println("Load index from: " + indexFile);
 
@@ -150,6 +233,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
     IndexerInvertedOccurrence loaded = (IndexerInvertedOccurrence) reader.readObject();
 
     this._documents = loaded._documents;
+    this._docIDs = loaded._docIDs;
     //update _numDocs
     this._numDocs = _documents.size();
     //update _totalTermFrequency
@@ -165,20 +249,82 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable{
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
         "with " + Long.toString(this._totalTermFrequency) + " terms!");
   }
+  */
+  public void loadIndex() throws IOException, ClassNotFoundException {
+    //File indexDirectory = new File(_options._indexPrefix);
+
+    //ObjectInputStream reader = new ObjectInputStream(new FileInputStream(_options._indexPrefix+ "/index.idx"));
+    String posting = _options._indexPrefix+ "/corpus.idx";
+    Reader reader = new InputStreamReader(new FileInputStream(posting));
+    Gson gson = new Gson();
+    Map<String, Vector<DocOcc>> _indexList = gson.fromJson(reader,
+                      new TypeToken<Map<String, Vector<DocOcc>>>() {}.getType()); 
+     reader.close();
+     System.out.println("index map has entryset " + _indexList.entrySet().size());
+     this._indexList = _indexList;
+    String urls = _options._indexPrefix+ "/docURL";
+    reader = new InputStreamReader(new FileInputStream(urls));
+    Map<String, Integer> _docIDs = gson.fromJson(reader,
+                      new TypeToken<Map<String, Integer>>() {}.getType()); 
+    System.out.println("url map has entryset " + _docIDs.entrySet().size());
+     reader.close();
+     this._numDocs = _docIDs.get("_numDocs");
+     _docIDs.remove("_numDocs");
+     this._totalTermFrequency = _docIDs.get("_totalTermFrequency");
+     _docIDs.remove("_totalTermFrequency");
+     /*
+    String docs = _options._indexPrefix+ "/docList";
+    reader = new InputStreamReader(new FileInputStream(docs));
+     Vector<DocumentIndexed> _documents = gson.fromJson(reader,
+                      new TypeToken<Vector<DocumentIndexed>>() {}.getType()); 
+     reader.close();
+    this._documents = _documents; */
+   // @SuppressWarnings("unchecked") this._indexList = (Map<String,Vector<Integer>>)reader.readObject();
+   
+    //String indexFile = _options._indexPrefix + "/corpus.idx";
+    //System.out.println("Load index from: " + indexFile);
+
+
+
+    this._docIDs = _docIDs;
+
+
+    System.out.println(Integer.toString(_numDocs) + " documents loaded ");// +
+        //"with " + Long.toString(_totalTermFrequency) + " terms!");
+  }
 
   @Override
-  public Document getDoc(int docid) {
-    return (docid >= _documents.size() || docid < 0) ? null : (Document)_documents.get(docid);
+  public edu.nyu.cs.cs2580.Document getDoc(int docid) {
+    return (docid >= _numDocs || docid < 0) ? null : (edu.nyu.cs.cs2580.Document)_documents.get(docid); //need to check
   }
 
   /**
    * In HW2, you should be using {@link DocumentIndexed}.
    */
   @Override
-  public Document nextDoc(Query query, int docid) {
+  public edu.nyu.cs.cs2580.Document nextDoc(Query query, int docid) {
     int nextDocid = nextQueryDocId(query,docid);
+    System.out.println("nextDocid is " + nextDocid);
     if(nextDocid > -1){
-      return _documents.get(nextDocid);
+      
+      if(_docCache.containsKey(nextDocid)){
+        return _docCache.get(nextDocid);
+      }else{
+        DocumentIndexed d = null;
+        try{
+          d = fectchDoc(nextDocid);
+        }catch(IOException e){
+          e.printStackTrace();
+        }
+        
+        System.out.println("updating _docCache now...");
+        if(_docCache.size() == 100){
+          _docCache.clear();
+        }
+        _docCache.put(d.getDocID(), d);
+        return d;
+      } 
+      //return _documents.get(nextDocid);
     }
     return null; 
   }
@@ -282,17 +428,16 @@ private int nextPhraseDocId(String[] tokens, int docid, int pos){
 
 private int nextPhrasePosition(String[] tokens, int docid, int pos){
     int first = nextTermPosition(tokens[0],docid,pos);
-    System.out.println("first pos is " + first);
+    int original = first;
     if(first == -1){
       return -1;
     }else{ 
          for(int i =1;i<tokens.length;i++){
               int tmp = nextTermPosition(tokens[i],docid,first);
-              System.out.println("next pos is " + tmp);
               if(tmp == -1)
                    return -1;
               if (tmp != first+1)
-                return nextPhraseDocId(tokens,docid,first);
+                return nextPhrasePosition(tokens,docid,original);
               else 
                 first = tmp;
          }  
@@ -313,32 +458,38 @@ private int phraseFrequencyInDoc(String[] phase, int docid){
 }
 
 private int findDocPosition(Vector<DocOcc> list, int docid){
-  System.out.println("findDocPosition for docid " + docid);
   int left = 0;
-  int right = list.size();
-  while(right - left > 1){
-    int mid = (left+right) /2;
-    if(list.get(mid).docid <= docid){
-      left = mid;
-    }else{
-      right = mid;
+  int right = list.size()-1;
+  while(left<=right){
+    int mid = (left+right)/2;
+    if(list.get(mid).docid < docid){
+      left = mid+1;
+    }else if(list.get(mid).docid > docid){
+      right = mid-1;
+    }else {
+      return mid;
     }
   }
-  System.out.println("return position " + right);
-  return right;
+  return -1;
 }
 
 private int nextTermPosition(String term, int docid, int pos){
-  System.out.println("enter nextTermPosition");
   int index = findDocPosition(_indexList.get(term),docid);
   Vector<Integer> list = _indexList.get(term).get(index)._pos;
-  System.out.println("_pos list size is " + list.size());
   if(list.size()==0 || list.lastElement()<=pos){
     return -1;
   }else if(pos < list.get(0)){
     return list.get(0);
   }else{
-    return binarySearch(list, 0, list.size(),pos);
+    return binarySearch(list, 0, list.size()-1,pos);
+    /*
+    for(int i=0;i<list.size();i++){
+      if(list.get(i)>pos){
+        return list.get(i);
+      }
+    }
+    return -1;
+    */
   }
 }
 
@@ -382,18 +533,19 @@ private int nextTermPosition(String term, int docid, int pos){
     }else{
       //process phrase
       int res = 0;
-       int docid = nextPhraseDocId(tokens,-1, -1);
-       while(docid !=-1){
+      int docid = nextPhraseDocId(tokens,-1, -1);
+      while(docid !=-1){
         res += phraseFrequencyInDoc(tokens,docid);
         docid = nextPhraseDocId(tokens,docid, -1);
-       }
-       return res;
+      }
+      return res;
     }
 
   }
 
   @Override
-  public int documentTermFrequency(String term, int docid) {
+  public int documentTermFrequency(String term, String url) {
+    int docid = _docIDs.get(url);
     String[] tokens = term.split(" ");
     if(tokens.length == 1){
       //if(_indexList.get(term).indexOf(docid)==-1){
@@ -408,6 +560,145 @@ private int nextTermPosition(String term, int docid, int pos){
 
   }
 
+  private void constructDocList(){
+
+  }
+//****************************************************io function
+  public void saveIndex(String name) throws IOException{
+      Writer writer = new OutputStreamWriter(new FileOutputStream(name));
+      Gson gson = new GsonBuilder().create();
+      gson.toJson(_indexList, writer);
+      writer.close();
+      _indexList.clear();
+  }
+
+  public void saveDocList(int id) throws IOException{
+     String name = _options._indexPrefix+ "/docList" +id;
+      Writer writer = new OutputStreamWriter(new FileOutputStream(name));
+      Gson gson = new GsonBuilder().create();
+      gson.toJson(_documents, writer);
+      writer.close();
+      _documents.clear();
+  }
+
+  public void saveDocURL() throws IOException{
+      String name = _options._indexPrefix+ "/docURL";
+      Writer writer = new OutputStreamWriter(new FileOutputStream(name));
+      Gson gson = new GsonBuilder().create();
+      gson.toJson(_docIDs, writer);
+      writer.close();
+      _docIDs.clear();
+  }
+
+  public void mergeIndex() throws IOException, ClassNotFoundException{
+        File indexDirectory = new File(_options._indexPrefix);
+        if(indexDirectory.isDirectory()){
+          File[] indexes = indexDirectory.listFiles();
+         // ObjectInputStream reader = new ObjectInputStream(new FileInputStream(one));
+         // @SuppressWarnings("unchecked") Map<String,Vector<Integer>> base = (Map<String,Vector<Integer>>)reader.readObject();
+          Gson gson = new GsonBuilder().create();
+
+          Map<String, Vector<DocOcc>> totalIndex = new HashMap<String, Vector<DocOcc>>();
+            for(int i = 0; i<indexes.length; i++){
+              if(indexes[i].getName().contains("corpus")){
+                 //ObjectInputStream reader2 = new ObjectInputStream(new FileInputStream(indexes[i]));
+                  // @SuppressWarnings("unchecked") Map<String,Vector<Integer>> _indexList = (Map<String,Vector<Integer>>)reader.readObject();
+                   Reader reader = new InputStreamReader(new FileInputStream(indexes[i]));
+                  //Gson gson = new Gson();
+                  Map<String, Vector<DocOcc>> _indexList = gson.fromJson(reader,
+                      new TypeToken<Map<String, Vector<DocOcc>>>() {}.getType()); 
+                    mergeMaps(totalIndex, _indexList);
+                    System.out.println("merge ");
+              }             
+            }
+          String indexFile = _options._indexPrefix+ "/corpus.idx";
+          Writer writer = new OutputStreamWriter(new FileOutputStream(indexFile));
+          gson.toJson(totalIndex, writer);
+          writer.close();
+          totalIndex.clear();
+          System.gc();
+        }
+  }
+
+  private void mergeMaps(Map<String,Vector<DocOcc>> map1, Map<String,Vector<DocOcc>>map2) throws ClassNotFoundException{
+    if(map1.isEmpty()){
+        map1.putAll(map2);
+    }else{
+      for(String key: map2.keySet()){
+          Vector<DocOcc> value = map2.get(key);
+          if(map1.containsKey(key)){
+            Vector<DocOcc> old= map1.get(key);
+            old.addAll(value);
+            map1.put(key,old);
+          }else{
+             map1.put(key,value);
+          }
+         
+      }
+    }
+  }
+
+/*private DocumentIndexed fectchDoc(int did){
+  int fileid = (did/1000) + 1;
+  String fileName = _options._indexPrefix+ "/docList" + did;
+  String cmd = "grep '\\<" + did + "\\>' " + fileName;
+  List<String> commands = new ArrayList<String>();
+  commands.add("/bin/bash");
+  commands.add("-c");
+  commands.add(cmd);
+  ProcessBuilder pb = new ProcessBuilder(commands);
+  Process p;
+  p = pb.start();
+  InputStreamReader isr = new InputStreamReader(p.getInputStream());
+  BufferedReader br = new BufferedReader(isr);
+  //String s[];
+  //String line = br.readLine();
+  String jsonString = br.readLine();
+  System.out.println(jsonString);
+  DocumentIndexed d = new ObjectMapper().readValue(jsonString, DocumentIndexed.class);
+  return d;
+} */
+
+private DocumentIndexed fectchDoc(int did) throws FileNotFoundException{
+  System.out.println("fectchDoc now for docId " + did);
+  int fileid = ((did + 1)/DOC_WRITE_SIZE);
+  String fileName = _options._indexPrefix+ "/docList" + fileid;  
+  System.out.println("docid is " + did + "searching file " + fileName);
+        Reader reader = new InputStreamReader(new FileInputStream(fileName));
+        Gson gson = new Gson();  
+        Vector<DocumentIndexed> docList = gson.fromJson(reader,
+              new TypeToken<Vector<DocumentIndexed>>() {}.getType());
+        System.out.println("check the title of returned doc " + docList.get(did % DOC_WRITE_SIZE).getTitle());
+          return docList.get(did % DOC_WRITE_SIZE);
+//return null;
+} 
+/*
+private DocumentIndexed fectchDoc(int did) throws IOException{
+  int fileid = (did/1000) + 1;
+  String fileName = _options._indexPrefix+ "/docList" + did;
+  String cmd = "grep '\\<" + did + "\\>' " + fileName;
+  List<String> commands = new ArrayList<String>();
+  commands.add("/bin/bash");
+  commands.add("-c");
+  commands.add(cmd);
+  ProcessBuilder pb = new ProcessBuilder(commands);
+  Process p;
+  p = pb.start();
+  InputStreamReader isr = new InputStreamReader(p.getInputStream());
+  BufferedReader br = new BufferedReader(isr);
+  String line = org.apache.commons.io.IOUtils.toString(rd);
+  //String line = br.readLine();
+  System.out.println(line);
+  //JsonObject jsonObj = JsonObject.getAsJsonObject(br.readline());
+  JsonObject json = (JsonObject)new JsonParser().parse(line);
+  Gson gson = new Gson();
+  DocumentIndexed d = gson.fromJson(json,DocumentIndexed.class); 
+
+  //String jsonString = br.readLine();
+  //System.out.println(jsonString);
+  //DocumentIndexed d = new ObjectMapper().readValue(jsonString, DocumentIndexed.class);
+  return d;
+}  */
 //**************************************************** auxilary functions
   //check if docids returned for all query terms are same 
   private boolean isEqual(int[] numbers){
@@ -437,14 +728,21 @@ private int nextTermPosition(String term, int docid, int pos){
   }
 
   private int binarySearch(Vector<Integer> list, int low, int high, int cur){
-    while(high - low >1){
-      int mid = (low + high) /2;
-      if(list.get(mid)<= cur){
-        low = mid;
-      }else{
-        high = mid;
+    while(low<=high){
+      int mid = (low+high)/2;
+      if(list.get(mid) < cur){
+        low = mid+1;
+      }else if(list.get(mid) > cur){
+        if(mid>=1&&list.get(mid-1)<=cur){
+          return list.get(mid);
+        }else{
+          high = mid-1;
+        }
+      }else {
+        return list.get(mid+1);
       }
     }
-    return high;
+    return -1;
   }
+
 }

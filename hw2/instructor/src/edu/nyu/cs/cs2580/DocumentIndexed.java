@@ -39,4 +39,12 @@ public class DocumentIndexed extends Document {
   	return this.docID;
   }
 
+  public void setTotalTerms(int terms){
+    this.totalTerms = terms;
+  }
+
+  public int getTotalTerms(){
+    return this.totalTerms;
+  }
+
 }

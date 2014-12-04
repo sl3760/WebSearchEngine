@@ -25,19 +25,22 @@ public class RankerFavorite extends Ranker {
   public Vector<ScoredDocument> runQuery(Query query, int numResults) {
     Vector<ScoredDocument> all = new Vector<ScoredDocument>();
     Document doc = _indexer.nextDoc(query,-1);
+    //System.out.println("XXXXX");
     while(doc!=null){
+      //System.out.println("AAAA");
       HashMap<String,Integer> termsMap = ((DocumentIndexed) doc).getTerms();
       double sumTerm = 0.0;
       for(String token: termsMap.keySet()){
-        //System.out.println(token);
-        int tf = termsMap.get(token);
-        //System.out.println(tf);
-        int n = _indexer.numDocs();
-        //System.out.println(n);
-        int dk = _indexer.corpusDocFrequencyByTerm(token);
-        //System.out.println(dk);
-        double tf_idf = (double) tf * (1+Math.log((double) n/dk)/Math.log(2));
-        sumTerm += tf_idf*tf_idf;
+        //System.out.println("BBBB");
+        if(token!=null&&token.length()!=0){
+          int tf = termsMap.get(token);
+          int n = _indexer.numDocs();
+          //System.out.println("CCCCC");
+          int dk = _indexer.corpusDocFrequencyByTerm(token);
+          //System.out.println("DDDDD");
+          double tf_idf = (double) tf * (1+Math.log((double) n/dk)/Math.log(2));
+          sumTerm += tf_idf*tf_idf;
+        }
       }
       double docScore = Math.sqrt(sumTerm);
       // Score the document using cosine.
@@ -54,13 +57,10 @@ public class RankerFavorite extends Ranker {
       double docQueryScore = 0.0;
       double querySum = 0.0;
       for(String queryToken: query._tokens){
-        int tf = _indexer.documentTermFrequency(queryToken,((DocumentIndexed) doc).getDocID());
-        System.out.println(tf);
+        int tf = _indexer.documentTermFrequency(queryToken,((DocumentIndexed) doc).getUrl());
         int n = _indexer.numDocs();
         int dk = _indexer.corpusDocFrequencyByTerm(queryToken);
-        System.out.println(dk);
         double tf_idf = (double) tf * (1+Math.log((double) n/dk)/Math.log(2));
-        System.out.println(tf_idf);
         docQueryScore += tf_idf*queris.get(queryToken);
         querySum += queris.get(queryToken)*queris.get(queryToken);
       }
