@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
@@ -62,7 +63,8 @@ class QueryHandler implements HttpHandler {
       TEXT,
       HTML,
     }
-    public OutputFormat _outputFormat = OutputFormat.TEXT;
+    //public OutputFormat _outputFormat = OutputFormat.TEXT;
+    public OutputFormat _outputFormat = OutputFormat.HTML;
 
     public CgiArguments(String uriQuery) {
       String[] params = uriQuery.split("&");
@@ -122,7 +124,7 @@ class QueryHandler implements HttpHandler {
   private void respondWithMsg(HttpExchange exchange, final String message)
       throws IOException {
     Headers responseHeaders = exchange.getResponseHeaders();
-    responseHeaders.set("Content-Type", "text/plain");
+    responseHeaders.set("Content-Type", "text/html");
     exchange.sendResponseHeaders(200, 0); // arbitrary number of bytes
     OutputStream responseBody = exchange.getResponseBody();
     responseBody.write(message.getBytes());
@@ -141,16 +143,32 @@ class QueryHandler implements HttpHandler {
   private void constructHTMLOutput(
       final Vector<ScoredDocument> docs, StringBuffer response) {
     response.append("<html><body>");
+    response.append("<ul>");
     for (ScoredDocument doc : docs) {
-      response.append(response.length() > 0 ? "\n" : "");
+      response.append("<li>");
       response.append(doc.asTextResult());
+      response.append("</li>");
     }
-    response.append(response.length() > 0 ? "\n" : "");
+    response.append("</ul>");
     response.append("</body></html>");
+  }
+
+  public Map<String, String> queryToMap(String query){
+    Map<String, String> result = new HashMap<String, String>();
+    for (String param : query.split("&")) {
+        String pair[] = param.split("=");
+        if (pair.length>1) {
+            result.put(pair[0], pair[1]);
+        }else{
+            result.put(pair[0], "");
+        }
+    }
+    return result;
   }
 
   public void handle(HttpExchange exchange) throws IOException {
     String requestMethod = exchange.getRequestMethod();
+
     if (!requestMethod.equalsIgnoreCase("GET")) { // GET requests only.
       return;
     }
@@ -164,22 +182,43 @@ class QueryHandler implements HttpHandler {
     System.out.println();
 
     // Validate the incoming request.
+    String uriPath = exchange.getRequestURI().getPath();
+    if(uriPath.equals("/ads")){
+      StringBuffer response = new StringBuffer();
+      response.append("<!DOCTYPE html><html><head><title>Home</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Choose a word to bid:</h3><br><br><ul class=\"list-group\"><a href=\"http://localhost:25805/ads/car\"><li class=\"list-group-item\">Car</li></a><a href=\"http://localhost:25805/ads/scinece\"><li class=\"list-group-item\">Science</li></a><a href=\"http://localhost:25805/ads/technology\"><li class=\"list-group-item\">Technology</li></a><a href=\"http://localhost:25805/ads/school\"><li class=\"list-group-item\">School</li></a><a href=\"http://localhost:25805/ads/music\"><li class=\"list-group-item\">Music</li></a></ul></div></div></body></html>");
+      respondWithMsg(exchange, response.toString());
+    }
+    if(uriPath.equals("/ads/bid")){
+      Map<String, String> params = queryToMap(exchange.getRequestURI().getQuery());
+      StringBuffer response = new StringBuffer();
+      response.append("<!DOCTYPE html><html><body>"+params.get("companyName")+params.get("advertisingName")+params.get("price")+"</body></html>");
+      respondWithMsg(exchange, response.toString());
+    }
+    if(Pattern.matches("/ads/.*",uriPath)){
+      StringBuffer response = new StringBuffer();
+      String[] urls = uriPath.split("/");
+      String word = urls[urls.length-1];
+      response.append("<!DOCTYPE html><html><head><title>Bid</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Bidding: "+word+"</h3><br><br><form role=\"form\" action=\"http://localhost:25805/ads/bid\" method=\"GET\" enctype=\"multipart/form-data\"><div class=\"form-group\"><label for=\"Company Name\">Company Name</label><input type=\"text\" class=\"form-control\" name=\"companyName\" placeholder=\"Enter compamy name\"></div><div class=\"form-group\"><label for=\"Advertising Name\">Advertising</label><input type=\"text\" class=\"form-control\" name=\"advertisingName\" placeholder=\"Enter advertising name\"></div><div class=\"form-group\"><label for=\"Price\">Bid Price</label><div class=\"input-group\"><span class=\"input-group-addon\">$</span><input type=\"text\" class=\"form-control\" name=\"price\" placeholder=\"Enter bid price\"></div></div><button type=\"submit\" class=\"btn btn-success\">Submit</button></form></div></div></body></html>");
+      respondWithMsg(exchange, response.toString());
+    }
+
+
+
     String uriQuery = exchange.getRequestURI().getQuery();
     uriQuery = uriQuery.toLowerCase();
     uriQuery = uriQuery.replace('+',' ');
-    String uriPath = exchange.getRequestURI().getPath();
     if (uriPath == null || uriQuery == null) {
-      respondWithMsg(exchange, "Something wrong with the URI!");
+      respondWithMsg(exchange, "<html><body>Something wrong with the URI!</body></html>");
     }
-    if (!uriPath.equals("/search") && !uriPath.equals("/prf")) {
-      respondWithMsg(exchange, "Only /search and /prf is handled!");
+    if (!uriPath.equals("/search") && !uriPath.equals("/prf") && !uriPath.equals("/ads")) {
+      respondWithMsg(exchange, "<html><body>Only /search, /prf and /ads is handled!</body></html>");
     }
     System.out.println("Query: " + uriQuery);
 
     // Process the CGI arguments.
     CgiArguments cgiArgs = new CgiArguments(uriQuery);
     if (cgiArgs._query.isEmpty()) {
-      respondWithMsg(exchange, "No query is given!");
+      respondWithMsg(exchange, "<html><body>No query is given!</body></html>");
     }
 
     // Create the ranker.
@@ -187,7 +226,7 @@ class QueryHandler implements HttpHandler {
         cgiArgs, SearchEngine.OPTIONS, _indexer);
     if (ranker == null) {
       respondWithMsg(exchange,
-          "Ranker " + cgiArgs._rankerType.toString() + " is not valid!");
+          "<html><body>Ranker " + cgiArgs._rankerType.toString() + " is not valid!</body></html>");
     }
 
     // Processing the query.
@@ -231,7 +270,7 @@ class QueryHandler implements HttpHandler {
       respondWithMsg(exchange, response.toString());
       System.out.println("Finished query: " + cgiArgs._query);
     }
-    
+
   }
 }
 

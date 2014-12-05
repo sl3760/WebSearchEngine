@@ -16,12 +16,15 @@ class ScoredDocument implements Comparable<ScoredDocument> {
   }
 
   public String asTextResult() {
-    StringBuffer buf = new StringBuffer();
+    StringBuffer buf = new StringBuffer();   
+    buf.append(_doc.getTitle());
+    /*
     buf.append(_doc._docid).append("\t");
-    buf.append(_doc.getTitle()).append("\t");
+    buf.append(_doc.getTitle()).append("\t");   
     buf.append(_score).append("\t");
     buf.append(_doc.getPageRank()).append("\t");
     buf.append(_doc.getNumViews());
+    */
     return buf.toString();
   }
 
