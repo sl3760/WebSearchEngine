@@ -11,7 +11,17 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map.Entry;
+
 import java.util.regex.Pattern;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import java.io.FileOutputStream;
+import java.io.Writer;
+import java.io.FileInputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.InputStreamReader;
 
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
@@ -153,17 +163,30 @@ class QueryHandler implements HttpHandler {
     response.append("</body></html>");
   }
 
-  public Map<String, String> queryToMap(String query){
-    Map<String, String> result = new HashMap<String, String>();
-    for (String param : query.split("&")) {
-        String pair[] = param.split("=");
-        if (pair.length>1) {
-            result.put(pair[0], pair[1]);
-        }else{
-            result.put(pair[0], "");
-        }
+  public Map<String, Map<String, String>> queryToMap(String query, String name) throws IOException {
+    Gson gson = new Gson();
+    Reader reader = new InputStreamReader(new FileInputStream(name));
+    Map<String, Map<String, String>> adMap = new HashMap<String, Map<String, String>>();
+    if(reader.ready()){
+      adMap = gson.fromJson(reader,
+                      new TypeToken<Map<String, Map<String, String>>>() {}.getType());
+    }    
+    reader.close();
+    String[] params = query.split("&");
+    String word = params[0].split("=")[1];
+    String companyName = params[1].split("=")[1];
+    String advertisingName = params[2].split("=")[1];
+    String price = params[3].split("=")[1];
+    if(adMap.containsKey(word)){
+      Map<String, String> temp = adMap.get(word);     
+      temp.put(companyName, advertisingName+"\t"+price);
+      adMap.put(word,temp);
+    }else{
+      Map<String, String> result = new HashMap<String, String>();
+      result.put(companyName, advertisingName+"\t"+price);
+      adMap.put(word,result);
     }
-    return result;
+    return new HashMap<String, Map<String, String>>(adMap);
   }
 
   public void handle(HttpExchange exchange) throws IOException {
@@ -189,16 +212,21 @@ class QueryHandler implements HttpHandler {
       respondWithMsg(exchange, response.toString());
     }
     if(uriPath.equals("/ads/bid")){
-      Map<String, String> params = queryToMap(exchange.getRequestURI().getQuery());
+      String name = "data/ads/ad.json";
+      Map<String, Map<String, String>> params = queryToMap(exchange.getRequestURI().getQuery(), name);
+      Writer writer = new OutputStreamWriter(new FileOutputStream(name));
+      Gson gson = new GsonBuilder().create();
+      gson.toJson(params, writer);
+      writer.close();
       StringBuffer response = new StringBuffer();
-      response.append("<!DOCTYPE html><html><body>"+params.get("companyName")+params.get("advertisingName")+params.get("price")+"</body></html>");
+      response.append("<!DOCTYPE html><html><head><title>Bidding Done</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h2>Congratulations! You have successfully bidden!</h2></body></html>");
       respondWithMsg(exchange, response.toString());
     }
     if(Pattern.matches("/ads/.*",uriPath)){
       StringBuffer response = new StringBuffer();
       String[] urls = uriPath.split("/");
       String word = urls[urls.length-1];
-      response.append("<!DOCTYPE html><html><head><title>Bid</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Bidding: "+word+"</h3><br><br><form role=\"form\" action=\"http://localhost:25805/ads/bid\" method=\"GET\" enctype=\"multipart/form-data\"><div class=\"form-group\"><label for=\"Company Name\">Company Name</label><input type=\"text\" class=\"form-control\" name=\"companyName\" placeholder=\"Enter compamy name\"></div><div class=\"form-group\"><label for=\"Advertising Name\">Advertising</label><input type=\"text\" class=\"form-control\" name=\"advertisingName\" placeholder=\"Enter advertising name\"></div><div class=\"form-group\"><label for=\"Price\">Bid Price</label><div class=\"input-group\"><span class=\"input-group-addon\">$</span><input type=\"text\" class=\"form-control\" name=\"price\" placeholder=\"Enter bid price\"></div></div><button type=\"submit\" class=\"btn btn-success\">Submit</button></form></div></div></body></html>");
+      response.append("<!DOCTYPE html><html><head><title>Bid</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Bidding: "+word+"</h3><br><br><form role=\"form\" action=\"http://localhost:25805/ads/bid\" method=\"GET\" enctype=\"multipart/form-data\"><div><input type=\"hidden\" name=\"word\" value=\""+word+"\"></div><div class=\"form-group\"><label for=\"Company Name\">Company Name</label><input type=\"text\" class=\"form-control\" name=\"companyName\" placeholder=\"Enter compamy name\"></div><div class=\"form-group\"><label for=\"Advertising Name\">Advertising</label><input type=\"text\" class=\"form-control\" name=\"advertisingName\" placeholder=\"Enter advertising name\"></div><div class=\"form-group\"><label for=\"Price\">Bid Price</label><div class=\"input-group\"><span class=\"input-group-addon\">$</span><input type=\"text\" class=\"form-control\" name=\"price\" placeholder=\"Enter bid price\"></div></div><button type=\"submit\" class=\"btn btn-success\">Submit</button></form></div></div></body></html>");
       respondWithMsg(exchange, response.toString());
     }
 
