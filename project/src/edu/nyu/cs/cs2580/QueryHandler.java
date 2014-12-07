@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.InputStreamReader;
+import java.io.File;
 
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
@@ -152,15 +153,22 @@ class QueryHandler implements HttpHandler {
 
   private void constructHTMLOutput(
       final Vector<ScoredDocument> docs, StringBuffer response) {
-    response.append("<html><body>");
-    response.append("<ul>");
+    response.append("<!DOCTYPE html><html><head><title>Bingle</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Bingle</h3></div><form role=\"form\" action=\"http://localhost:25805/search\" method=\"GET\" enctype=\"multipart/form-data\"><div class=\"input-group\"><div><input type=\"hidden\" name=\"ranker\" value=\"comprehensive\"></div><input type=\"text\" class=\"form-control\" name=\"query\"><div class=\"input-group-btn\"><button type=\"submit\" class=\"btn btn-success\">Bingle</button></div></div></form><br><br><div class=\"row\">");
+    response.append("<div class=\"col-xs-12 col-md-8\"><ul class=\"list-group\">");
     for (ScoredDocument doc : docs) {
-      response.append("<li>");
+      response.append("<li class=\"list-group-item list-group-item-success\">");
+      response.append("<a href=\"http://localhost:25805/search/wiki?title="+doc.asTextResult()+"\">");
       response.append(doc.asTextResult());
+      response.append("</a>");
       response.append("</li>");
     }
-    response.append("</ul>");
-    response.append("</body></html>");
+    response.append("</ul></div>");
+    response.append("<div class=\"col-xs-6 col-md-4\"><ul class=\"list-group\">");
+
+      response.append("<li class=\"list-group-item list-group-item-info\">");
+      response.append("<a href=\"http://localhost:25805/search/wiki\">Web_2.0</a></div>");
+
+    response.append("</ul></div></div></body></html>");
   }
 
   public Map<String, Map<String, String>> queryToMap(String query, String name) throws IOException {
@@ -206,6 +214,11 @@ class QueryHandler implements HttpHandler {
 
     // Validate the incoming request.
     String uriPath = exchange.getRequestURI().getPath();
+    if(uriPath.equals("/")){
+      StringBuffer response = new StringBuffer();
+      response.append("<!DOCTYPE html><html><head><title>Bingle</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"jumbotron\"><center><h1>Bingle</h1></center><br><br><form role=\"form\" action=\"http://localhost:25805/search\" method=\"GET\" enctype=\"multipart/form-data\"><div><input type=\"hidden\" name=\"ranker\" value=\"comprehensive\"></div><div class=\"form-group\"><input type=\"text\" class=\"form-control\" name=\"query\"></div><br><br><center><button type=\"submit\" class=\"btn btn-success\">Bingle Search</button></center></form></div></div></body></html>");
+      respondWithMsg(exchange, response.toString());
+    }
     if(uriPath.equals("/ads")){
       StringBuffer response = new StringBuffer();
       response.append("<!DOCTYPE html><html><head><title>Home</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Choose a word to bid:</h3><br><br><ul class=\"list-group\"><a href=\"http://localhost:25805/ads/car\"><li class=\"list-group-item\">Car</li></a><a href=\"http://localhost:25805/ads/scinece\"><li class=\"list-group-item\">Science</li></a><a href=\"http://localhost:25805/ads/technology\"><li class=\"list-group-item\">Technology</li></a><a href=\"http://localhost:25805/ads/school\"><li class=\"list-group-item\">School</li></a><a href=\"http://localhost:25805/ads/music\"><li class=\"list-group-item\">Music</li></a></ul></div></div></body></html>");
@@ -230,7 +243,46 @@ class QueryHandler implements HttpHandler {
       respondWithMsg(exchange, response.toString());
     }
 
-
+    if(uriPath.equals("/search/wiki")){
+      String uriQuery = exchange.getRequestURI().getQuery();
+      String title = uriQuery.split("=")[1];
+      String fileName = "data/wiki/"+title;
+      File file = new File(fileName);
+      Headers responseHeaders = exchange.getResponseHeaders();
+      responseHeaders.set("Content-Type", "text/html");
+      exchange.sendResponseHeaders(200, 0); // arbitrary number of bytes
+      OutputStream responseBody = exchange.getResponseBody();
+      FileInputStream fs = new FileInputStream(file);
+      final byte[] buffer = new byte[0x10000];
+      int count = 0;
+      while ((count = fs.read(buffer)) >= 0) {
+        responseBody.write(buffer,0,count);
+      }
+      fs.close();
+      responseBody.close();
+    }
+    
+    // wait ads to update information
+    /*
+    if(uriPath.equals("/search/ads")){
+      String uriQuery = exchange.getRequestURI().getQuery();
+      String title = uriQuery.split("=")[1];
+      String fileName = "data/wiki/"+title;
+      File file = new File(fileName);
+      Headers responseHeaders = exchange.getResponseHeaders();
+      responseHeaders.set("Content-Type", "text/html");
+      exchange.sendResponseHeaders(200, 0); // arbitrary number of bytes
+      OutputStream responseBody = exchange.getResponseBody();
+      FileInputStream fs = new FileInputStream(file);
+      final byte[] buffer = new byte[0x10000];
+      int count = 0;
+      while ((count = fs.read(buffer)) >= 0) {
+        responseBody.write(buffer,0,count);
+      }
+      fs.close();
+      responseBody.close();
+    }
+    */
 
     String uriQuery = exchange.getRequestURI().getQuery();
     uriQuery = uriQuery.toLowerCase();
@@ -246,7 +298,9 @@ class QueryHandler implements HttpHandler {
     // Process the CGI arguments.
     CgiArguments cgiArgs = new CgiArguments(uriQuery);
     if (cgiArgs._query.isEmpty()) {
-      respondWithMsg(exchange, "<html><body>No query is given!</body></html>");
+      StringBuffer response = new StringBuffer();
+      response.append("<!DOCTYPE html><html><head><title>Bingle</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"jumbotron\"><center><h1>Bingle</h1></center><br><br><form role=\"form\" action=\"http://localhost:25805/search\" method=\"GET\" enctype=\"multipart/form-data\"><div><input type=\"hidden\" name=\"ranker\" value=\"comprehensive\"></div><div class=\"form-group\"><input type=\"text\" class=\"form-control\" name=\"query\"></div><br><br><center><button type=\"submit\" class=\"btn btn-success\">Bingle Search</button></center></form></div></div></body></html>");
+      respondWithMsg(exchange, response.toString());
     }
 
     // Create the ranker.
