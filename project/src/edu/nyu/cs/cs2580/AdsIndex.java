@@ -630,7 +630,7 @@ public class AdsIndex extends Indexer implements Serializable{
     }
     return vector;
   }
-*/
+  
   @Override
   public int corpusDocFrequencyByTerm(String term) {
     if(_cacheList.containsKey(term)){
