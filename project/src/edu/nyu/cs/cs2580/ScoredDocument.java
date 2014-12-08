@@ -46,4 +46,12 @@ class ScoredDocument implements Comparable<ScoredDocument> {
   public Document getDoc(){
     return this._doc;
   }
+
+  public double getScore(){
+    return this._score;
+  }
+
+  public void setScore(double s){
+    this._score = s;
+  }
 }

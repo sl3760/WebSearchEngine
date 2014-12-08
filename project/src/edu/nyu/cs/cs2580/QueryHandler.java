@@ -65,6 +65,7 @@ class QueryHandler implements HttpHandler {
       QL,
       LINEAR,
       COMPREHENSIVE,
+      ADS,
     }
     public RankerType _rankerType = RankerType.NONE;
     
