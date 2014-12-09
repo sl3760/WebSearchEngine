@@ -163,7 +163,7 @@ class QueryHandler implements HttpHandler {
 
 //need to modify
   private void constructHTMLOutput(
-      final Vector<ScoredDocument> docs, StringBuffer response) {
+      final Vector<ScoredDocument> docs, final Vector<ScoredDocument> ads_docs, StringBuffer response) {
     response.append("<!DOCTYPE html><html><head><title>Bingle</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Bingle</h3></div><form role=\"form\" action=\"http://localhost:25805/search\" method=\"GET\" enctype=\"multipart/form-data\"><div class=\"input-group\"><div><input type=\"hidden\" name=\"ranker\" value=\"comprehensive\"></div><input type=\"text\" class=\"form-control\" name=\"query\"><div class=\"input-group-btn\"><button type=\"submit\" class=\"btn btn-success\">Bingle</button></div></div></form><br><br><div class=\"row\">");
     response.append("<div class=\"col-xs-12 col-md-8\"><ul class=\"list-group\">");
     for (ScoredDocument doc : docs) {
@@ -175,10 +175,15 @@ class QueryHandler implements HttpHandler {
     }
     response.append("</ul></div>");
     response.append("<div class=\"col-xs-6 col-md-4\"><ul class=\"list-group\">");
-
+    /*
+    for (ScoredDocument ad_doc : ads_docs) {
       response.append("<li class=\"list-group-item list-group-item-info\">");
-      response.append("<a href=\"http://localhost:25805/search/wiki\">Web_2.0</a></div>");
-
+      response.append("<a href=\"http://localhost:25805/search/wiki\">");
+      response.append(ad_doc.asTextResult());
+      response.append("</a>");
+      response.append("</li>");
+    }
+    */
     response.append("</ul></div></div></body></html>");
   }
 
@@ -333,8 +338,10 @@ class QueryHandler implements HttpHandler {
 
     if(uriPath.equals("/search")){
       // Ranking.
+      System.out.println("AAAAAAAAA"+cgiArgs._outputFormat);
       Vector<ScoredDocument> scoredDocs =
           ranker.runQuery(processedQuery, cgiArgs._numResults);
+      System.out.println("XXXXXXXXXXXX cgiArgs._outputFormat");
       Vector<ScoredDocument> scoredDocs_ads =
           adsRanker.runQuery(processedQuery, cgiArgs._numResults);    
       StringBuffer response = new StringBuffer();
@@ -346,7 +353,8 @@ class QueryHandler implements HttpHandler {
         // @CS2580: Plug in your HTML output
       //****************************
       //need to pass scoredDocs as well
-        constructHTMLOutput(scoredDocs_ads, response);
+        System.out.println("XXXXXXXXXXXX");
+        constructHTMLOutput(scoredDocs, scoredDocs_ads, response);
         break;
       default:
         // nothing
