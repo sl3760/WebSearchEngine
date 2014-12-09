@@ -175,7 +175,6 @@ class QueryHandler implements HttpHandler {
     }
     response.append("</ul></div>");
     response.append("<div class=\"col-xs-6 col-md-4\"><ul class=\"list-group\">");
-    /*
     for (ScoredDocument ad_doc : ads_docs) {
       response.append("<li class=\"list-group-item list-group-item-info\">");
       response.append("<a href=\"http://localhost:25805/search/wiki\">");
@@ -183,7 +182,7 @@ class QueryHandler implements HttpHandler {
       response.append("</a>");
       response.append("</li>");
     }
-    */
+    
     response.append("</ul></div></div></body></html>");
   }
 
@@ -237,7 +236,7 @@ class QueryHandler implements HttpHandler {
     }
     if(uriPath.equals("/ads")){
       StringBuffer response = new StringBuffer();
-      response.append("<!DOCTYPE html><html><head><title>Home</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Choose a word to bid:</h3><br><br><ul class=\"list-group\"><a href=\"http://localhost:25805/ads/car\"><li class=\"list-group-item\">Car</li></a><a href=\"http://localhost:25805/ads/scinece\"><li class=\"list-group-item\">Science</li></a><a href=\"http://localhost:25805/ads/technology\"><li class=\"list-group-item\">Technology</li></a><a href=\"http://localhost:25805/ads/school\"><li class=\"list-group-item\">School</li></a><a href=\"http://localhost:25805/ads/music\"><li class=\"list-group-item\">Music</li></a></ul></div></div></body></html>");
+      response.append("<!DOCTYPE html><html><head><title>Home</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Choose a word to bid:</h3><br><br><ul class=\"list-group\"><a href=\"http://localhost:25805/ads/car\"><li class=\"list-group-item\">Car</li></a><a href=\"http://localhost:25805/ads/science\"><li class=\"list-group-item\">Science</li></a><a href=\"http://localhost:25805/ads/technology\"><li class=\"list-group-item\">Technology</li></a><a href=\"http://localhost:25805/ads/school\"><li class=\"list-group-item\">School</li></a><a href=\"http://localhost:25805/ads/music\"><li class=\"list-group-item\">Music</li></a></ul></div></div></body></html>");
       respondWithMsg(exchange, response.toString());
     }
     if(uriPath.equals("/ads/bid")){
@@ -338,12 +337,10 @@ class QueryHandler implements HttpHandler {
 
     if(uriPath.equals("/search")){
       // Ranking.
-      System.out.println("AAAAAAAAA"+cgiArgs._outputFormat);
       Vector<ScoredDocument> scoredDocs =
           ranker.runQuery(processedQuery, cgiArgs._numResults);
-      System.out.println("XXXXXXXXXXXX cgiArgs._outputFormat");
       Vector<ScoredDocument> scoredDocs_ads =
-          adsRanker.runQuery(processedQuery, cgiArgs._numResults);    
+          adsRanker.runQuery(processedQuery, cgiArgs._numResults);   
       StringBuffer response = new StringBuffer();
       switch (cgiArgs._outputFormat) {
       case TEXT:
@@ -353,7 +350,6 @@ class QueryHandler implements HttpHandler {
         // @CS2580: Plug in your HTML output
       //****************************
       //need to pass scoredDocs as well
-        System.out.println("XXXXXXXXXXXX");
         constructHTMLOutput(scoredDocs, scoredDocs_ads, response);
         break;
       default:
