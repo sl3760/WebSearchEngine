@@ -189,22 +189,23 @@ public class SearchEngine {
   }
   
   private static void startIndexing() throws IOException {
-    //Indexer indexer = Indexer.Factory.getIndexerByOption(SearchEngine.OPTIONS);
-   // Check(indexer != null,
-    //    "Indexer " + SearchEngine.OPTIONS._indexerType + " not found!");
-    //indexer.constructIndex();
+    Indexer indexer = Indexer.Factory.getIndexerByOption(SearchEngine.OPTIONS);
+    Check(indexer != null,
+        "Indexer " + SearchEngine.OPTIONS._indexerType + " not found!");
+    indexer.constructIndex();
     AdsIndex adsIndex = new AdsIndex(SearchEngine.OPTIONS);
     adsIndex.constructIndex();
   }
   
   private static void startServing() throws IOException, ClassNotFoundException {
     // Create the handler and its associated indexer.
-   // Indexer indexer = Indexer.Factory.getIndexerByOption(SearchEngine.OPTIONS);
-   // Check(indexer != null,
-   //     "Indexer " + SearchEngine.OPTIONS._indexerType + " not found!");
+    Indexer docIndexer = Indexer.Factory.getIndexerByOption(SearchEngine.OPTIONS);
+    Check(docIndexer != null,
+        "Indexer " + SearchEngine.OPTIONS._indexerType + " not found!");
+    docIndexer.loadIndex();
     Indexer adsIndex = new AdsIndex(SearchEngine.OPTIONS);
     adsIndex.loadIndex();
-    QueryHandler handler = new QueryHandler(SearchEngine.OPTIONS, adsIndex);
+    QueryHandler handler = new QueryHandler(SearchEngine.OPTIONS, docIndexer, adsIndex);
 
     // Establish the serving environment
     InetSocketAddress addr = new InetSocketAddress(SearchEngine.PORT);

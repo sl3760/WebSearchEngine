@@ -23,6 +23,7 @@ public class RankerComprehensive extends Ranker {
 
   @Override
   public Vector<ScoredDocument> runQuery(Query query, int numResults) {
+    //System.out.println("enter runQuery in RankerComprehensive");
   	    Vector<ScoredDocument> all = new Vector<ScoredDocument>();
     Document doc = _indexer.nextDoc(query,-1);
     System.out.println("the returned doc is null? " + doc==null);
