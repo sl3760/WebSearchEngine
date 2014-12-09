@@ -49,6 +49,7 @@ public class SearchEngine {
     // HW1: We have only one file, corpus.csv.
     // HW2/HW3: We have a partial Wikipedia dump.
     public String _corpusPrefix = null;
+    public String _adsPrefix = null;
 
     // The parent path where the log date reside.
     // HW1/HW2: n/a
@@ -59,6 +60,7 @@ public class SearchEngine {
     // HW1: n/a
     // HW2/HW3: This is where the index is built into and loaded from.
     public String _indexPrefix = null;
+    public String _adsIndexPrefix = null;
 
     // The specific Indexer to be used.
     public String _indexerType = null;
@@ -98,11 +100,14 @@ public class SearchEngine {
       // Populate global options.
       _corpusPrefix = options.get("corpus_prefix");
       Check(_corpusPrefix != null, "Missing option: corpus_prefix!");
+      _adsPrefix = options.get("ads_prefix");
+      Check(_adsPrefix != null, "Missing option: ads_prefix!");
       _logPrefix = options.get("log_prefix");
       Check(_logPrefix != null, "Missing option: log_prefix!");
       _indexPrefix = options.get("index_prefix");
       Check(_indexPrefix != null, "Missing option: index_prefix!");
-
+      _adsIndexPrefix = options.get("adsIndex_prefix");
+      Check(_adsIndexPrefix != null, "Missing option: adsIndex_prefix!");
       // Populate specific options.
       _indexerType = options.get("indexer_type");
       Check(_indexerType != null, "Missing option: indexer_type!");
@@ -188,15 +193,19 @@ public class SearchEngine {
     Check(indexer != null,
         "Indexer " + SearchEngine.OPTIONS._indexerType + " not found!");
     indexer.constructIndex();
+    AdsIndex adsIndex = new AdsIndex(SearchEngine.OPTIONS);
+    adsIndex.constructIndex();
   }
   
   private static void startServing() throws IOException, ClassNotFoundException {
     // Create the handler and its associated indexer.
-    Indexer indexer = Indexer.Factory.getIndexerByOption(SearchEngine.OPTIONS);
-    Check(indexer != null,
+    Indexer docIndexer = Indexer.Factory.getIndexerByOption(SearchEngine.OPTIONS);
+    Check(docIndexer != null,
         "Indexer " + SearchEngine.OPTIONS._indexerType + " not found!");
-    indexer.loadIndex();
-    QueryHandler handler = new QueryHandler(SearchEngine.OPTIONS, indexer);
+    docIndexer.loadIndex();
+    Indexer adsIndex = new AdsIndex(SearchEngine.OPTIONS);
+    adsIndex.loadIndex();
+    QueryHandler handler = new QueryHandler(SearchEngine.OPTIONS, docIndexer, adsIndex);
 
     // Establish the serving environment
     InetSocketAddress addr = new InetSocketAddress(SearchEngine.PORT);

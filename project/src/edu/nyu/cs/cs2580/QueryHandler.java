@@ -66,6 +66,7 @@ class QueryHandler implements HttpHandler {
       QL,
       LINEAR,
       COMPREHENSIVE,
+      ADS,
     }
     public RankerType _rankerType = RankerType.NONE;
     
@@ -126,10 +127,13 @@ class QueryHandler implements HttpHandler {
   // For accessing the underlying documents to be used by the Ranker. Since 
   // we are not worried about thread-safety here, the Indexer class must take
   // care of thread-safety.
-  private Indexer _indexer;
+  private Indexer _docIndexer;
+  private Indexer _adsIndexer;
 
-  public QueryHandler(Options options, Indexer indexer) {
-    _indexer = indexer;
+
+  public QueryHandler(Options options, Indexer indexer1, Indexer indexer2) {
+    _docIndexer = indexer1;
+    _adsIndexer = indexer2;
   }
 
   private void respondWithMsg(HttpExchange exchange, final String message)
@@ -143,14 +147,21 @@ class QueryHandler implements HttpHandler {
   }
 
   private void constructTextOutput(
-      final Vector<ScoredDocument> docs, StringBuffer response) {
+      final Vector<ScoredDocument> docs, final Vector<ScoredDocument> ads_docs, StringBuffer response) {
     for (ScoredDocument doc : docs) {
       response.append(response.length() > 0 ? "\n" : "");
       response.append(doc.asTextResult());
     }
+
+    for (ScoredDocument doc : ads_docs) {
+      response.append(response.length() > 0 ? "\n" : "");
+      response.append(doc.asTextResult());
+    }
     response.append(response.length() > 0 ? "\n" : "");
+
   }
 
+//need to modify
   private void constructHTMLOutput(
       final Vector<ScoredDocument> docs, StringBuffer response) {
     response.append("<!DOCTYPE html><html><head><title>Bingle</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Bingle</h3></div><form role=\"form\" action=\"http://localhost:25805/search\" method=\"GET\" enctype=\"multipart/form-data\"><div class=\"input-group\"><div><input type=\"hidden\" name=\"ranker\" value=\"comprehensive\"></div><input type=\"text\" class=\"form-control\" name=\"query\"><div class=\"input-group-btn\"><button type=\"submit\" class=\"btn btn-success\">Bingle</button></div></div></form><br><br><div class=\"row\">");
@@ -305,12 +316,17 @@ class QueryHandler implements HttpHandler {
 
     // Create the ranker.
     Ranker ranker = Ranker.Factory.getRankerByArguments(
-        cgiArgs, SearchEngine.OPTIONS, _indexer);
+        cgiArgs, SearchEngine.OPTIONS, _docIndexer);
     if (ranker == null) {
       respondWithMsg(exchange,
           "<html><body>Ranker " + cgiArgs._rankerType.toString() + " is not valid!</body></html>");
     }
-
+    //create the ads ranker
+    Ranker adsRanker = new AdsRanker(SearchEngine.OPTIONS, cgiArgs, _adsIndexer);
+    if (adsRanker == null) {
+      respondWithMsg(exchange,
+          "<html><body>AdsRanker is not valid!</body></html>");
+    }
     // Processing the query.
     QueryPhrase processedQuery = new QueryPhrase(cgiArgs._query);
     processedQuery.processQuery();
@@ -319,14 +335,18 @@ class QueryHandler implements HttpHandler {
       // Ranking.
       Vector<ScoredDocument> scoredDocs =
           ranker.runQuery(processedQuery, cgiArgs._numResults);
+      Vector<ScoredDocument> scoredDocs_ads =
+          adsRanker.runQuery(processedQuery, cgiArgs._numResults);    
       StringBuffer response = new StringBuffer();
       switch (cgiArgs._outputFormat) {
       case TEXT:
-        constructTextOutput(scoredDocs, response);
+        constructTextOutput(scoredDocs, scoredDocs_ads, response);
         break;
       case HTML:
         // @CS2580: Plug in your HTML output
-        constructHTMLOutput(scoredDocs, response);
+      //****************************
+      //need to pass scoredDocs as well
+        constructHTMLOutput(scoredDocs_ads, response);
         break;
       default:
         // nothing
@@ -334,7 +354,7 @@ class QueryHandler implements HttpHandler {
       respondWithMsg(exchange, response.toString());
       System.out.println("Finished query: " + cgiArgs._query);
     }else if(uriPath.equals("/prf")){
-      QueryRepresentation queryRepresentation = new QueryRepresentation(cgiArgs._numDocs,cgiArgs._numTerms,ranker,processedQuery, _indexer);
+      QueryRepresentation queryRepresentation = new QueryRepresentation(cgiArgs._numDocs,cgiArgs._numTerms,ranker,processedQuery, _docIndexer);
       HashMap<String, Double> result = queryRepresentation.computeRepresentations();
       Set<Entry<String, Double>> set = result.entrySet();
       List<Entry<String, Double>> list = new ArrayList<Entry<String, Double>>(set);

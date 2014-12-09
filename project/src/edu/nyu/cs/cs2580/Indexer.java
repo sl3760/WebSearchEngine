@@ -73,7 +73,7 @@ public abstract class Indexer {
 
   // APIs for index construction and loading.
 
-  /**
+  /*
    * Called when the SearchEngine is in {@code Mode.INDEX} mode. Subclass must
    * construct the index from the provided corpus at {@code corpus_prefix}.
    * 
@@ -93,7 +93,7 @@ public abstract class Indexer {
    */
   public abstract void constructIndex() throws IOException;
 
-  /**
+  /*
    * Called exactly once when the SearchEngine is in {@code Mode.SERVE} mode.
    * Subclass must load the index at {@code index_prefix} to be ready for
    * serving the search traffic.
@@ -105,7 +105,7 @@ public abstract class Indexer {
    */
   public abstract void loadIndex() throws IOException, ClassNotFoundException;
 
-  /**
+  /*
    * APIs for statistics needed for ranking.
    * 
    * {@link numDocs} and {@link totalTermFrequency} must return correct results
@@ -146,7 +146,7 @@ public abstract class Indexer {
         return new IndexerInvertedOccurrence(options);
       } else if (options._indexerType.equals("inverted-compressed")) {
         return new IndexerInvertedCompressed(options);
-      }
+      } 
       return null;
     }
   }
