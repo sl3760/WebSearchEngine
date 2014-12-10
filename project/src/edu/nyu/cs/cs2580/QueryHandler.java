@@ -23,6 +23,11 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.InputStreamReader;
 import java.io.File;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.util.UUID;
 
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
@@ -163,7 +168,7 @@ class QueryHandler implements HttpHandler {
 
 //need to modify
   private void constructHTMLOutput(
-      final Vector<ScoredDocument> docs, final Vector<ScoredDocument> ads_docs, StringBuffer response) {
+      final Vector<ScoredDocument> docs, final Vector<ScoredDocument> ads_docs, String sessionID,  StringBuffer response) {
     response.append("<!DOCTYPE html><html><head><title>Bingle</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Bingle</h3></div><form role=\"form\" action=\"http://localhost:25805/search\" method=\"GET\" enctype=\"multipart/form-data\"><div class=\"input-group\"><div><input type=\"hidden\" name=\"ranker\" value=\"comprehensive\"></div><input type=\"text\" class=\"form-control\" name=\"query\"><div class=\"input-group-btn\"><button type=\"submit\" class=\"btn btn-success\">Bingle</button></div></div></form><br><br><div class=\"row\">");
     response.append("<div class=\"col-xs-12 col-md-8\"><ul class=\"list-group\">");
     for (ScoredDocument doc : docs) {
@@ -177,7 +182,7 @@ class QueryHandler implements HttpHandler {
     response.append("<div class=\"col-xs-6 col-md-4\"><ul class=\"list-group\">");
     for (ScoredDocument ad_doc : ads_docs) {
       response.append("<li class=\"list-group-item list-group-item-info\">");
-      response.append("<a href=\"http://localhost:25805/search/wiki\">");
+      response.append("<a href=\"http://localhost:25805/search/ads?title="+ad_doc.asTextResult()+"&sessionID="+sessionID+"\">");
       response.append(ad_doc.asTextResult());
       response.append("</a>");
       response.append("</li>");
@@ -277,12 +282,31 @@ class QueryHandler implements HttpHandler {
       responseBody.close();
     }
     
-    // wait ads to update information
-    /*
     if(uriPath.equals("/search/ads")){
       String uriQuery = exchange.getRequestURI().getQuery();
-      String title = uriQuery.split("=")[1];
-      String fileName = "data/wiki/"+title;
+      String[] paras = uriQuery.split("&");
+      String title = paras[0].split("=")[1];
+      String sessionID = paras[1].split("=")[1];
+      String logName = "data/ads/log.json";
+      Gson gson = new Gson();
+      Reader reader = new InputStreamReader(new FileInputStream(logName));
+      Map<String, Map<String, String>> adLogMap = new HashMap<String, Map<String,String>>();
+      adLogMap = gson.fromJson(reader,
+                        new TypeToken<Map<String, Map<String, String>>>() {}.getType());
+      reader.close();
+      Map<String,String> map = adLogMap.get("adLogs");
+      if(map.containsKey(sessionID)){
+        String ad = map.get(sessionID);
+        map.put(sessionID,ad+title);
+      }
+      adLogMap.put("adLogs",map);
+      Map<String, Map<String, String>> res = new HashMap<String, Map<String, String>>(adLogMap);
+      Writer writer = new OutputStreamWriter(new FileOutputStream(logName));
+      gson = new GsonBuilder().create();
+      gson.toJson(res, writer);
+      writer.close();
+      
+      String fileName = "data/wiki/1743";
       File file = new File(fileName);
       Headers responseHeaders = exchange.getResponseHeaders();
       responseHeaders.set("Content-Type", "text/html");
@@ -296,8 +320,8 @@ class QueryHandler implements HttpHandler {
       }
       fs.close();
       responseBody.close();
+      
     }
-    */
 
     String uriQuery = exchange.getRequestURI().getQuery();
     uriQuery = uriQuery.toLowerCase();
@@ -340,7 +364,39 @@ class QueryHandler implements HttpHandler {
       Vector<ScoredDocument> scoredDocs =
           ranker.runQuery(processedQuery, cgiArgs._numResults);
       Vector<ScoredDocument> scoredDocs_ads =
-          adsRanker.runQuery(processedQuery, cgiArgs._numResults);   
+          adsRanker.runQuery(processedQuery, cgiArgs._numResults); 
+
+      String logName = "data/ads/log.json";
+      Gson gson = new Gson();
+      Reader reader = new InputStreamReader(new FileInputStream(logName));
+      Map<String, Map<String, String>> adLogMap = new HashMap<String, Map<String, String>>();
+      if(reader.ready()){
+        adLogMap = gson.fromJson(reader,
+                        new TypeToken<Map<String, Map<String, String>>>() {}.getType());
+      }    
+      if(adLogMap==null||adLogMap.size()==0){
+        adLogMap.put("adLogs", new HashMap<String, String>());
+      }
+      reader.close();
+      StringBuilder sb = new StringBuilder();
+      sb.append(cgiArgs._query+"\t");
+      for(int i=0; i<scoredDocs_ads.size();i++){
+        sb.append(scoredDocs_ads.get(i).asTextResult());
+        if(i!=scoredDocs_ads.size()-1){
+          sb.append("+");
+        }
+      }
+      sb.append("\t");
+      sb.append("");
+      String sessionID = String.valueOf(UUID.randomUUID());
+      Map<String, String> map = adLogMap.get("adLogs");
+      map.put(sessionID,sb.toString());     
+      adLogMap.put("adLogs",map);
+      Writer writer = new OutputStreamWriter(new FileOutputStream(logName));
+      gson = new GsonBuilder().create();
+      gson.toJson(adLogMap, writer);
+      writer.close();
+
       StringBuffer response = new StringBuffer();
       switch (cgiArgs._outputFormat) {
       case TEXT:
@@ -348,9 +404,9 @@ class QueryHandler implements HttpHandler {
         break;
       case HTML:
         // @CS2580: Plug in your HTML output
-      //****************************
-      //need to pass scoredDocs as well
-        constructHTMLOutput(scoredDocs, scoredDocs_ads, response);
+        //****************************
+        //need to pass scoredDocs as well
+        constructHTMLOutput(scoredDocs, scoredDocs_ads, sessionID, response);
         break;
       default:
         // nothing
