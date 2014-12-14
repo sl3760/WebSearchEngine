@@ -242,12 +242,30 @@ class QueryHandler implements HttpHandler {
     }
     if(uriPath.equals("/createads")){
       StringBuffer response = new StringBuffer();
-      response.append("<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" ><title>Home</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Choose a word to bid:</h3><br><br><ul class=\"list-group\"><a href=\"http://localhost:25805/ads/car\"><li class=\"list-group-item\">Car</li></a><a href=\"http://localhost:25805/ads/science\"><li class=\"list-group-item\">Science</li></a><a href=\"http://localhost:25805/ads/technology\"><li class=\"list-group-item\">Technology</li></a><a href=\"http://localhost:25805/ads/school\"><li class=\"list-group-item\">School</li></a><a href=\"http://localhost:25805/ads/music\"><li class=\"list-group-item\">Music</li></a></ul></div></div></body></html>");
+      response.append("<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" ><title>Bid</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Create Bidding Ads</h3><br><br><form role=\"form\" action=\"http://localhost:25805/ads/create\" method=\"GET\" enctype=\"multipart/form-data\"><div class=\"form-group\"><label for=\"Company Name\">Company Name</label><input type=\"text\" class=\"form-control\" name=\"companyName\" placeholder=\"Enter compamy name\" required></div><div class=\"form-group\"><label for=\"Advertising ID\">Advertising</label><input type=\"text\" class=\"form-control\" name=\"advertisingName\" placeholder=\"Enter advertising id\" required></div><div class=\"form-group\"><label for=\"title\">Title</label><input type=\"text\" class=\"form-control\" name=\"title\" placeholder=\"Enter title\" required></div><div class=\"form-group\"><label for=\"Description\">Description</label><input type=\"text\" class=\"form-control\" name=\"description\" placeholder=\"Enter description\" required></div><div class=\"form-group\"><label for=\"URL\">URL</label><input type=\"text\" class=\"form-control\" name=\"url\" placeholder=\"Enter URL\" required></div><button type=\"submit\" class=\"btn btn-success\">Submit</button></form></div></div></body></html>");
       respondWithMsg(exchange, response.toString());
     }
     if(uriPath.equals("/ads")){
       StringBuffer response = new StringBuffer();
       response.append("<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" ><title>Home</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Choose a word to bid:</h3><br><br><ul class=\"list-group\"><a href=\"http://localhost:25805/ads/car\"><li class=\"list-group-item\">Car</li></a><a href=\"http://localhost:25805/ads/science\"><li class=\"list-group-item\">Science</li></a><a href=\"http://localhost:25805/ads/technology\"><li class=\"list-group-item\">Technology</li></a><a href=\"http://localhost:25805/ads/school\"><li class=\"list-group-item\">School</li></a><a href=\"http://localhost:25805/ads/music\"><li class=\"list-group-item\">Music</li></a></ul></div></div></body></html>");
+      respondWithMsg(exchange, response.toString());
+    }
+    if(uriPath.equals("/ads/create")){
+      String query = exchange.getRequestURI().getQuery();
+      query = query.replace('+',' ');
+      String[] params = query.split("&");
+      String company = params[0].split("=")[1];
+      String advertising = params[1].split("=")[1];
+      String title = params[2].split("=")[1];
+      String description = params[3].split("=")[1];
+      String url = params[4].split("=")[1];
+      String fileName = "data/ads/ads.tsv";
+      File file = new File(fileName);
+      BufferedWriter out = new BufferedWriter(new FileWriter(file,true));  
+      out.write(company+"_"+advertising+"\t"+title+"\t"+description+"\t"+url+"\n");
+      out.close();
+      StringBuffer response = new StringBuffer();
+      response.append("<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" ><title>Bidding Done</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h2>Congratulations! You have successfully created an AD!</h2></body></html>");
       respondWithMsg(exchange, response.toString());
     }
     if(uriPath.equals("/ads/bid")){
@@ -265,7 +283,7 @@ class QueryHandler implements HttpHandler {
       StringBuffer response = new StringBuffer();
       String[] urls = uriPath.split("/");
       String word = urls[urls.length-1];
-      response.append("<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" ><title>Bid</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Bidding: "+word+"</h3><br><br><form role=\"form\" action=\"http://localhost:25805/ads/bid\" method=\"GET\" enctype=\"multipart/form-data\"><div><input type=\"hidden\" name=\"word\" value=\""+word+"\"></div><div class=\"form-group\"><label for=\"Company Name\">Company Name</label><input type=\"text\" class=\"form-control\" name=\"companyName\" placeholder=\"Enter compamy id\" required></div><div class=\"form-group\"><label for=\"Advertising Name\">Advertising</label><input type=\"text\" class=\"form-control\" name=\"advertisingName\" placeholder=\"Enter advertising name\" required></div><div class=\"form-group\"><label for=\"Price\">Bid Price</label><div class=\"input-group\"><span class=\"input-group-addon\">$</span><input type=\"text\" class=\"form-control\" name=\"price\" placeholder=\"Enter bid price\" required></div></div><button type=\"submit\" class=\"btn btn-success\">Submit</button></form></div></div></body></html>");
+      response.append("<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" ><title>Bid</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Bidding: "+word+"</h3><br><br><form role=\"form\" action=\"http://localhost:25805/ads/bid\" method=\"GET\" enctype=\"multipart/form-data\"><div><input type=\"hidden\" name=\"word\" value=\""+word+"\"></div><div class=\"form-group\"><label for=\"Company Name\">Company Name</label><input type=\"text\" class=\"form-control\" name=\"companyName\" placeholder=\"Enter compamy name\" required></div><div class=\"form-group\"><label for=\"Advertising ID\">Advertising</label><input type=\"text\" class=\"form-control\" name=\"advertisingName\" placeholder=\"Enter advertising id\" required></div><div class=\"form-group\"><label for=\"Price\">Bid Price</label><div class=\"input-group\"><span class=\"input-group-addon\">$</span><input type=\"text\" class=\"form-control\" name=\"price\" placeholder=\"Enter bid price\" required></div></div><button type=\"submit\" class=\"btn btn-success\">Submit</button></form></div></div></body></html>");
       respondWithMsg(exchange, response.toString());
     }
 

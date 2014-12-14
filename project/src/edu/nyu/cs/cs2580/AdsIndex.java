@@ -104,7 +104,6 @@ public class AdsIndex extends Indexer implements Serializable{
     try {
       String line = null;
       while ((line = reader.readLine()) != null) {
-        System.out.println("XXXXXXXXXXXXXXXXXXX");
         processDocument(fileCount, line);
         fileCount++;
         if(fileCount>0&&fileCount%maxFileNum==0){
