@@ -190,9 +190,9 @@ public class SearchEngine {
   
   private static void startIndexing() throws IOException {
     Indexer indexer = Indexer.Factory.getIndexerByOption(SearchEngine.OPTIONS);
-    Check(indexer != null,
-        "Indexer " + SearchEngine.OPTIONS._indexerType + " not found!");
-    indexer.constructIndex();
+    //Check(indexer != null,
+    //    "Indexer " + SearchEngine.OPTIONS._indexerType + " not found!");
+    //indexer.constructIndex();
     AdsIndex adsIndex = new AdsIndex(SearchEngine.OPTIONS);
     adsIndex.constructIndex();
   }

@@ -166,25 +166,26 @@ class QueryHandler implements HttpHandler {
 
   }
 
-//need to modify
+  //need to modify
   private void constructHTMLOutput(
       final Vector<ScoredDocument> docs, final Vector<ScoredDocument> ads_docs, String sessionID,  StringBuffer response) {
     response.append("<!DOCTYPE html><html><head><title>Bingle</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Bingle</h3></div><form role=\"form\" action=\"http://localhost:25805/search\" method=\"GET\" enctype=\"multipart/form-data\"><div class=\"input-group\"><div><input type=\"hidden\" name=\"ranker\" value=\"comprehensive\"></div><input type=\"text\" class=\"form-control\" name=\"query\"><div class=\"input-group-btn\"><button type=\"submit\" class=\"btn btn-success\">Bingle</button></div></div></form><br><br><div class=\"row\">");
     response.append("<div class=\"col-xs-12 col-md-8\"><ul class=\"list-group\">");
     for (ScoredDocument doc : docs) {
       response.append("<li class=\"list-group-item list-group-item-success\">");
-      response.append("<a href=\"http://localhost:25805/search/wiki?title="+doc.asTextResult()+"\">");
+      response.append("<h3><a href=\"http://localhost:25805/search/wiki?title="+doc.asTextResult()+"\">");
       response.append(doc.asTextResult());
-      response.append("</a>");
+      response.append("</a></h3>");
       response.append("</li>");
     }
     response.append("</ul></div>");
     response.append("<div class=\"col-xs-6 col-md-4\"><ul class=\"list-group\">");
     for (ScoredDocument ad_doc : ads_docs) {
       response.append("<li class=\"list-group-item list-group-item-info\">");
-      response.append("<a href=\"http://localhost:25805/search/ads?title="+ad_doc.asTextResult()+"&sessionID="+sessionID+"\">");
+      response.append("<div><h3><a href=\"http://localhost:25805/search/ads?title="+ad_doc.asTextResult()+"&sessionID="+sessionID+"\">");
       response.append(ad_doc.asTextResult());
-      response.append("</a>");
+      response.append("</a></h3></div>");
+      response.append("<div><h5>Hello ads!</h5></div>");
       response.append("</li>");
     }
     
@@ -306,7 +307,7 @@ class QueryHandler implements HttpHandler {
       gson.toJson(res, writer);
       writer.close();
       
-      String fileName = "data/wiki/1743";
+      String fileName = "data/ads/content/"+title;
       File file = new File(fileName);
       Headers responseHeaders = exchange.getResponseHeaders();
       responseHeaders.set("Content-Type", "text/html");

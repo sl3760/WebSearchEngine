@@ -104,6 +104,7 @@ public class AdsIndex extends Indexer implements Serializable{
     try {
       String line = null;
       while ((line = reader.readLine()) != null) {
+        System.out.println("XXXXXXXXXXXXXXXXXXX");
         processDocument(fileCount, line);
         fileCount++;
         if(fileCount>0&&fileCount%maxFileNum==0){
@@ -156,6 +157,7 @@ public class AdsIndex extends Indexer implements Serializable{
     String title = s.next(); 
     String url = title; 
     String body = s.next();
+    System.out.println("company_ads: "+company_ads);
     Advertisement.setCompany_ads(company_ads); 
     Advertisement.setTitle(title);
     Advertisement.setUrl(url);
