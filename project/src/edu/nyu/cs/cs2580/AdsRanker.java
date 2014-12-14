@@ -1,5 +1,6 @@
 package edu.nyu.cs.cs2580;
 
+import java.lang.StringBuilder;
 import java.util.Map;
 import java.util.Vector;
 import java.util.HashMap;
@@ -34,6 +35,8 @@ public class AdsRanker extends Ranker {
   @Override
   public Vector<ScoredDocument> runQuery(Query query, int numResults) {
   	    Vector<ScoredDocument> all = new Vector<ScoredDocument>();
+        // map for computing average QS
+        HashMap<Integer, Vector<ScoredDocument>> qs_map = new HashMap<Integer,Vector<ScoredDocument>>(); 
     //load auction file into map
     Gson gson = new Gson();
     String file = _options._adsPrefix+ "/ad.json";
@@ -48,12 +51,34 @@ public class AdsRanker extends Ranker {
     }catch(IOException e){
         System.out.println("error happened when load auctionList");
     }
+    // loading log information
+    
+     file = _options._adsPrefix+ "/log.json";
+    System.out.println("read log from " + file);
+    Map<String, Map<String,String>> logInfo = new HashMap<String, Map<String, String>>();
+    try{
+          Reader reader = new InputStreamReader(new FileInputStream(file));
+          logInfo = gson.fromJson(reader,
+                  new TypeToken<Map<String, Map<String, String>>>() {}.getType()); 
+      System.out.println("auctionList map has entryset " + auctionList.entrySet().size());
+      reader.close();
+    }catch(IOException e){
+        System.out.println("error happened when load log");
+    }
+    //System.out.println("loading log done!");
+     
+    Map<String, String> logs = new HashMap<String,String>();
+    if(logInfo!=null)
+      logs = logInfo.get("adLogs");
+    System.out.println("loading log done!");
+
 
     //get all relevant ads id for each query token, the key is company name and value is id_price
     Map<String,String> targetAds = new HashMap<String,String>();
     Map<Integer, Double> priceList = new HashMap<Integer, Double>();
     for(String term: query._tokens){
       System.out.println("the query term is: " + term);
+      if(auctionList.containsKey(term)){
       targetAds = auctionList.get(term);
       for(Map.Entry<String, String> entry : targetAds.entrySet()){
           String company = entry.getKey();
@@ -96,8 +121,14 @@ public class AdsRanker extends Ranker {
             int C = (int)_indexer._totalTermFrequency;
             relev_score *= (1.0-beta)*(double)fqi_d/(double)D + beta*(double)cqi/(double)C;
           }
+
+          double cosine = getTitleSimilarity(ad.getTitle(),query._tokens);
+          relev_score += cosine;
           //
-          double ctr = getCTR();
+          String query_s = convertToString(query._tokens);
+          System.out.println("before loading ctr!");
+          double ctr = getCTR(query_s,term,ad.getTitle(),logs,company);
+          System.out.println("after loading ctr!");
           double qscore = getQScore(relev_score, ctr);
          // double score = getFinalScore(qscore, price);
 
@@ -106,9 +137,39 @@ public class AdsRanker extends Ranker {
           d.setTitle(ad.getTitle());
           //d.setPageRank(ad.getPageRank());
          // d.setNumViews(ad.getNumViews());
-          all.add(new ScoredDocument(d, qscore));
+          //all.add(new ScoredDocument(d, qscore));
+          ScoredDocument sd = new ScoredDocument(d,qscore);
+          if(!qs_map.containsKey(ad._docid)){
+               Vector<ScoredDocument> v = new Vector<ScoredDocument>();
+               v.add(sd);
+               qs_map.put(ad._docid,v);
+          }
+          else{
+            Vector<ScoredDocument> v = qs_map.get(ad._docid);
+               v.add(sd);
+               qs_map.put(ad._docid,v);
+
+          }
+            
+
       }
     }
+  }
+
+   // get the average QS
+   for(Map.Entry<Integer, Vector<ScoredDocument>> entry: qs_map.entrySet()){
+       double sum = 0.0;
+       Document d = null;
+       Vector<ScoredDocument> v = entry.getValue();
+       for(ScoredDocument sd: v){
+             sum += sd.getScore();
+             d = sd.getDoc();
+       }
+       all.add(new ScoredDocument(d, sum /  v.size()));
+
+
+
+   }
 
     //update final score
     for(ScoredDocument d: all){        
@@ -135,8 +196,152 @@ public class AdsRanker extends Ranker {
   }
 
 //need to fill in
-  private double getCTR(){
-    return 0.1;
+  private double getCTR(String query, String token, String title, Map<String,String> logs,String company){
+    // No log information at all!
+    if(logs == null )
+        return 0.3;
+      int q_impression = 0;
+      int  q_click  = 0;
+      int t_impression = 0;
+      int t_click = 0;
+
+      for(String log : logs.values()){
+           String[] tmp = log.split("\t");
+           if(tmp.length>1){
+           if(tmp[0].equals(query)){           // Query log
+              if(tmp[1].contains(title)){
+                     q_impression++;
+                     if(tmp.length == 3){
+                      if(tmp[2].equals(title))
+                          q_click++;
+                     }
+                }
+              continue;
+
+
+          }
+
+            if(tmp[0].equals(token)){             // token log
+                if(tmp[1].contains(title)){
+                     t_impression++;
+                     if(tmp.length == 3){
+                      if(tmp[2].equals(title))
+                          t_click++;
+                     }
+                }
+
+
+          }
+    }
+  }
+
+    if(q_impression ==0 && t_impression == 0){     // Brand new, check this company's other ads;
+        double sum = 0.0;
+       
+        Vector<String> ads = getOtherAdsInCompany(company,title);
+        for(String ad : ads){
+          int impression = 0;
+          int click = 0;
+        for(String log : logs.values()){
+           String[] tmp = log.split("\t");
+
+               if(tmp.length > 1){    
+              if(tmp[1].contains(ad)){
+                     impression++;
+                     if(tmp.length == 3){
+                      if(tmp[2].equals(ad))
+                          click++;
+                     }
+                }
+              }
+              
+              
+          }
+          if(impression == 0 ) 
+            sum+=0.3;
+          else  
+            sum+= (double)click / (double)impression;
+        }
+        if(sum == 0 ) return 0.3;
+        else 
+          return sum / ads.size();
+
+
+    }
+
+    if(q_impression != 0 ) 
+     return (double)q_click / (double)q_impression;
+   if(t_impression != 0 ) 
+     return (double)t_click / (double)t_impression;
+
+   return 0.3;
+
+    
+
+    
+  }
+
+  private Vector<String> getOtherAdsInCompany(String company, String title){
+    Vector<String> res = new Vector<String>();
+    Vector<Advertisement> all = ((AdsIndex)_indexer).getDocuments();
+    for(int i  = 0 ; i < all.size(); i++){
+         String company_ads = all.get(i).getCompany_ads();
+         String name = company_ads.substring(0,company_ads.length()-2);
+         if(name.equals(company)){
+          String candidate = all.get(i).getTitle();
+          if(!candidate.equals(title))
+            res.add(candidate);
+         }
+    }
+    return res;
+
+  }
+
+  private double getTitleSimilarity(String title, Vector<String> query){
+    HashMap<String, Integer> counts = new HashMap<String, Integer>();
+    HashMap<String, Integer> query_count = new HashMap<String,Integer>();
+    int sum = 0;
+    int query_mold = 0;
+    int title_mold = 0;
+    String[] tmp = title.split("\\s+");
+    for(int i = 0; i < tmp.length; i ++){
+      if(counts.containsKey(tmp[i]))
+          counts.put(tmp[i],counts.get(tmp[i])+1);
+      else
+         counts.put(tmp[i],1);
+    }
+    for(int i =0 ; i < query.size(); i ++){
+      if(query_count.containsKey(query.get(i)))
+         query_count.put(query.get(i),query_count.get(query.get(i))+1);
+    
+     else query_count.put(query.get(i),1);
+   }
+   for(Map.Entry<String,Integer> entry:query_count.entrySet()){
+        String token = entry.getKey();
+        if(counts.containsKey(token)){
+          sum += entry.getValue() * counts.get(token);
+        }
+        query_mold += entry.getValue() * entry.getValue();
+
+   }
+   for(Map.Entry<String,Integer> entry:counts.entrySet()){
+        
+        title_mold += entry.getValue() * entry.getValue();
+
+   }
+
+   double res = (double)sum / Math.sqrt(query_mold) * Math.sqrt(title_mold);
+   return res;
+
+
+
+  }
+
+  private String convertToString(Vector<String> v){
+       StringBuilder sb = new StringBuilder();
+       for(String s : v)
+         sb.append(s);
+       return(sb.toString());
   }
 
 //need an actually equation
