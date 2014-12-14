@@ -180,6 +180,7 @@ class QueryHandler implements HttpHandler {
     }
     response.append("</ul></div>");
     response.append("<div class=\"col-xs-6 col-md-4\"><ul class=\"list-group\">");
+    if(ads_docs !=null){
     for (ScoredDocument ad_doc : ads_docs) {
       response.append("<li class=\"list-group-item list-group-item-info\">");
       response.append("<div><h3><a href=\"http://localhost:25805/search/ads?title="+ad_doc.asTextResult()+"&sessionID="+sessionID+"\">");
@@ -188,6 +189,7 @@ class QueryHandler implements HttpHandler {
       response.append("<div><h5>Hello ads!</h5></div>");
       response.append("</li>");
     }
+  }
     
     response.append("</ul></div></div></body></html>");
   }
