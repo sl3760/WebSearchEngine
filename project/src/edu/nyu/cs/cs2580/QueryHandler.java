@@ -231,7 +231,29 @@ class QueryHandler implements HttpHandler {
     if(ctrMap.containsKey(word)){
       res = ctrMap.get(word);
     }
-    res.put(companyName+"_"+advertisingName, "0.1+F+F");
+
+    int n = 0;
+    Double sumCTR = 0.0;
+
+    for(Map.Entry<String, Map<String, String>> entryMap : ctrMap.entrySet()){
+      Map<String, String> crtRes = entryMap.getValue();
+      for(Map.Entry<String,String> entry : crtRes.entrySet()){
+        String id = entry.getKey();
+        String ctr = entry.getValue();
+        String[] vals = ctr.split("\\+");
+        if(id.indexOf(companyName)!=-1){
+          sumCTR += Double.parseDouble(vals[0]);
+          n++;
+        }
+      }
+    }
+     
+    Double oriCTR = 0.1;
+    if(n!=0){
+      oriCTR = sumCTR/n;
+    }
+
+    res.put(companyName+"_"+advertisingName, oriCTR+"+F+F");
     ctrMap.put(word,res);
     gson.toJson(ctrMap, writer);
     writer.close();
@@ -474,6 +496,8 @@ class QueryHandler implements HttpHandler {
       gson = new GsonBuilder().create();
       gson.toJson(adLogMap, writer);
       writer.close();
+      
+      System.out.println("ad size: "+scoredDocs_ads.size());
 
       // update display records
       String ctrName = "data/ads/CTR.json";

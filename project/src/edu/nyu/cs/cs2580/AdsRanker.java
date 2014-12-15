@@ -94,7 +94,7 @@ public class AdsRanker extends Ranker {
     Map<String,String> targetAds = new HashMap<String,String>();
     Map<Integer, Double> priceList = new HashMap<Integer, Double>();
     for(String term: query._tokens){
-      //System.out.println("the query term is: " + term);
+      System.out.println("the query term is: " + term);
       if(auctionList.containsKey(term)){
       targetAds = auctionList.get(term);
       for(Map.Entry<String, String> entry : targetAds.entrySet()){
@@ -184,9 +184,12 @@ public class AdsRanker extends Ranker {
             
 
       }
+    }else{
+      System.out.println(term + " is not in auctionList");
     }
   }
 
+System.out.println("finished looking, qs_map has entries: " + qs_map.entrySet());
    // get the average QS
    for(Map.Entry<Integer, Vector<ScoredDocument>> entry: qs_map.entrySet()){
        double sum = 0.0;
@@ -197,10 +200,12 @@ public class AdsRanker extends Ranker {
              d = sd.getDoc();
        }
        all.add(new ScoredDocument(d, sum /  v.size()));
-
-
-
    }
+System.out.println("before updating final score, ads size is: " + all.size());
+System.out.println("priceList size: " + priceList.size());
+for(Integer k : priceList.keySet()){
+  System.out.println(k + ": " + priceList.get(k));
+}
 
     //update final score
     for(ScoredDocument d: all){        
