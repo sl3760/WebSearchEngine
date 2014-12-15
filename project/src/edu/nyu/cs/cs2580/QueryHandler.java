@@ -168,7 +168,7 @@ class QueryHandler implements HttpHandler {
 
   //need to modify
   private void constructHTMLOutput(
-      final Vector<ScoredDocument> docs, final Vector<ScoredDocument> ads_docs, String sessionID,  StringBuffer response) {
+      final Vector<ScoredDocument> docs, final Vector<ScoredDocument> ads_docs, String sessionID,  String query, StringBuffer response) {
     response.append("<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" ><title>Bingle</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Bingle</h3></div><form role=\"form\" action=\"http://localhost:25805/search\" method=\"GET\" enctype=\"multipart/form-data\"><div class=\"input-group\"><div><input type=\"hidden\" name=\"ranker\" value=\"comprehensive\"></div><input type=\"text\" class=\"form-control\" name=\"query\"><div class=\"input-group-btn\"><button type=\"submit\" class=\"btn btn-success\">Bingle</button></div></div></form><br><br><div class=\"row\">");
     response.append("<div class=\"col-xs-12 col-md-8\"><ul class=\"list-group\">");
     for (ScoredDocument doc : docs) {
@@ -181,15 +181,15 @@ class QueryHandler implements HttpHandler {
     response.append("</ul></div>");
     response.append("<div class=\"col-xs-6 col-md-4\"><ul class=\"list-group\">");
     if(ads_docs !=null){
-    for (ScoredDocument ad_doc : ads_docs) {
-      response.append("<li class=\"list-group-item list-group-item-info\">");
-      response.append("<div><h3><a href=\"http://localhost:25805/search/ads?title="+ad_doc.asTextResult()+"&sessionID="+sessionID+"\">");
-      response.append(ad_doc.asTextResult());
-      response.append("</a></h3></div>");
-      response.append("<div><h5>Hello ads!</h5></div>");
-      response.append("</li>");
+      for (ScoredDocument ad_doc : ads_docs) {
+        response.append("<li class=\"list-group-item list-group-item-info\">");
+        response.append("<div><h3><a href=\"http://localhost:25805/search/ads?title="+ad_doc.asTextResult()+"&sessionID="+sessionID+"\"+&compamyID=\""+ad_doc.getCompanyID()+"\"&query=\""+query+"\">");
+        response.append(ad_doc.asTextResult());
+        response.append("</a></h3></div>");
+        response.append("<div><h5>Hello ads!</h5></div>");
+        response.append("</li>");
+      }
     }
-  }
     
     response.append("</ul></div></div></body></html>");
   }
@@ -217,6 +217,25 @@ class QueryHandler implements HttpHandler {
       result.put(companyName, advertisingName+"\t"+price);
       adMap.put(word,result);
     }
+
+    String ctrName = "data/ads/CTR.json";
+    reader = new InputStreamReader(new FileInputStream(ctrName));
+    Map<String, Map<String, String>> ctrMap = new HashMap<String, Map<String, String>>();
+    if(reader.ready()){
+      ctrMap = gson.fromJson(reader,
+                      new TypeToken<Map<String, Map<String, String>>>() {}.getType());
+    }    
+    reader.close();
+    Writer writer = new OutputStreamWriter(new FileOutputStream(ctrName));
+    Map<String, String> res = new HashMap<String, String>();
+    if(ctrMap.containsKey(word)){
+      res = ctrMap.get(word);
+    }
+    res.put(companyName+"_"+advertisingName, "0.1+F+F");
+    ctrMap.put(word,res);
+    gson.toJson(ctrMap, writer);
+    writer.close();
+
     return new HashMap<String, Map<String, String>>(adMap);
   }
 
@@ -313,6 +332,8 @@ class QueryHandler implements HttpHandler {
       String[] paras = uriQuery.split("&");
       String title = paras[0].split("=")[1];
       String sessionID = paras[1].split("=")[1];
+      String companyID = paras[2].split("=")[1];
+      String query = paras[3].split("=")[1];
       String logName = "data/ads/log.json";
       Gson gson = new Gson();
       Reader reader = new InputStreamReader(new FileInputStream(logName));
@@ -331,6 +352,36 @@ class QueryHandler implements HttpHandler {
       gson = new GsonBuilder().create();
       gson.toJson(res, writer);
       writer.close();
+
+      // update click records
+      String ctrName = "data/ads/CTR.json";
+      reader = new InputStreamReader(new FileInputStream(ctrName));
+      Map<String, Map<String, String>> ctrMap = new HashMap<String, Map<String, String>>();
+      if(reader.ready()){
+        ctrMap = gson.fromJson(reader,
+                        new TypeToken<Map<String, Map<String, String>>>() {}.getType());
+      }    
+      reader.close();
+      for(Map.Entry<String, Map<String, String>> entryMap : ctrMap.entrySet()){
+        String key = entryMap.getKey();
+        if(query.indexOf(key)!=-1){
+          Map<String, String> crtRes = ctrMap.get(key);
+          for(Map.Entry<String,String> entry : crtRes.entrySet()){
+            String id = entry.getKey();
+            String ctr = entry.getValue();
+            String[] vals = ctr.split("+");
+            if(id.equals(companyID)){
+              crtRes.put(id,vals[0]+vals[1]+"T");
+            }else{
+              crtRes.put(id,vals[0]+vals[1]+"F");
+            }
+          }
+          ctrMap.put(key,crtRes);
+          writer = new OutputStreamWriter(new FileOutputStream(ctrName));
+          gson.toJson(ctrMap, writer);
+          writer.close();
+        }
+      }
       
       String fileName = "data/ads/content/"+title;
       File file = new File(fileName);
@@ -423,6 +474,37 @@ class QueryHandler implements HttpHandler {
       gson.toJson(adLogMap, writer);
       writer.close();
 
+      // update display records
+      String ctrName = "data/ads/CTR.json";
+      reader = new InputStreamReader(new FileInputStream(ctrName));
+      Map<String, Map<String, String>> ctrMap = new HashMap<String, Map<String, String>>();
+      if(reader.ready()){
+        ctrMap = gson.fromJson(reader,
+                        new TypeToken<Map<String, Map<String, String>>>() {}.getType());
+      }    
+      reader.close();
+      for(ScoredDocument ad:scoredDocs_ads){
+        for(Map.Entry<String, Map<String, String>> entry : ctrMap.entrySet()){
+          if(cgiArgs._query.indexOf(entry.getKey())!=-1){
+            Map<String, String> res = entry.getValue();
+            for(Map.Entry<String,String> entryCTR : res.entrySet()){
+              String id = entryCTR.getKey();
+              String ctr = entryCTR.getValue();
+              String[] vals = ctr.split("+");
+              if(id.equals(ad.getCompanyID())){
+                res.put(id,vals[0]+"T"+vals[1]);
+              }else{
+                res.put(id,vals[0]+"F"+vals[1]);
+              }
+            }
+            ctrMap.put(entry.getKey(),res);
+          }
+        }
+      }
+      writer = new OutputStreamWriter(new FileOutputStream(ctrName));
+      gson.toJson(ctrMap, writer);
+      writer.close();
+
       StringBuffer response = new StringBuffer();
       switch (cgiArgs._outputFormat) {
       case TEXT:
@@ -432,7 +514,7 @@ class QueryHandler implements HttpHandler {
         // @CS2580: Plug in your HTML output
         //****************************
         //need to pass scoredDocs as well
-        constructHTMLOutput(scoredDocs, scoredDocs_ads, sessionID, response);
+        constructHTMLOutput(scoredDocs, scoredDocs_ads, sessionID, cgiArgs._query, response);
         break;
       default:
         // nothing
