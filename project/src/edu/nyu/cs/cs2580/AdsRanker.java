@@ -91,6 +91,7 @@ public class AdsRanker extends Ranker {
           //get relevence score
           Query c = new Query(company);
           Document ad = _indexer.nextDoc(c,subid);
+          if(ad==null) continue;
           System.out.println("find one matching ads w id " + ad._docid);
           String url = ad.getUrl();
           int adid = ad._docid;
@@ -133,12 +134,13 @@ public class AdsRanker extends Ranker {
          // double score = getFinalScore(qscore, price);
 
           // System.out.println("ranking score is " + score);
-          Document d = new Document(ad._docid);
-          d.setTitle(ad.getTitle());
+          //Document d = new Advertisement(ad._docid);
+          //d.setTitle(ad.getTitle());          
+          //d.setCompany_ads(ad)
           //d.setPageRank(ad.getPageRank());
          // d.setNumViews(ad.getNumViews());
           //all.add(new ScoredDocument(d, qscore));
-          ScoredDocument sd = new ScoredDocument(d,qscore);
+          ScoredDocument sd = new ScoredDocument(ad,qscore);
           if(!qs_map.containsKey(ad._docid)){
                Vector<ScoredDocument> v = new Vector<ScoredDocument>();
                v.add(sd);

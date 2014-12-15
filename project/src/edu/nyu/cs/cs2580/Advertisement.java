@@ -12,6 +12,7 @@ public class Advertisement extends Document {
   private int docID;
   private int totalTerms;
   private String company_ads;
+  private String body;
 
   public Advertisement(int adid) {
     super(adid);
@@ -40,6 +41,14 @@ public class Advertisement extends Document {
 
   public String getCompany_ads(){
   	return this.company_ads;
+  }
+  
+  public void setBody(String body){
+  	this.body = body;
+  }
+
+  public String getBody(){
+  	return this.body;
   }
 
   public void setTotalTerms(int terms){

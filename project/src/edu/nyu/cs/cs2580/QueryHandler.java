@@ -183,10 +183,10 @@ class QueryHandler implements HttpHandler {
     if(ads_docs !=null){
       for (ScoredDocument ad_doc : ads_docs) {
         response.append("<li class=\"list-group-item list-group-item-info\">");
-        response.append("<div><h3><a href=\"http://localhost:25805/search/ads?title="+ad_doc.asTextResult()+"&sessionID="+sessionID+"\"+&compamyID=\""+ad_doc.getCompanyID()+"\"&query=\""+query+"\">");
+        response.append("<div><h3><a href=\"http://localhost:25805/search/ads?title="+ad_doc.asTextResult()+"&sessionID="+sessionID+"\"+&compamyID=\""+ad_doc.getCompany_ads()+"\"&query=\""+query+"\">");
         response.append(ad_doc.asTextResult());
         response.append("</a></h3></div>");
-        response.append("<div><h5>Hello ads!</h5></div>");
+        response.append("<div><h5>"+"</h5></div>");
         response.append("</li>");
       }
     }
@@ -491,7 +491,7 @@ class QueryHandler implements HttpHandler {
               String id = entryCTR.getKey();
               String ctr = entryCTR.getValue();
               String[] vals = ctr.split("+");
-              if(id.equals(ad.getCompanyID())){
+              if(id.equals(ad.getCompany_ads())){
                 res.put(id,vals[0]+"T"+vals[1]);
               }else{
                 res.put(id,vals[0]+"F"+vals[1]);
