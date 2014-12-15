@@ -17,6 +17,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.Writer;
+import java.io.OutputStreamWriter;
 
 import edu.nyu.cs.cs2580.QueryHandler.CgiArguments;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
@@ -37,6 +39,7 @@ public class AdsRanker extends Ranker {
   	    Vector<ScoredDocument> all = new Vector<ScoredDocument>();
         // map for computing average QS
         HashMap<Integer, Vector<ScoredDocument>> qs_map = new HashMap<Integer,Vector<ScoredDocument>>(); 
+
     //load auction file into map
     Gson gson = new Gson();
     String file = _options._adsPrefix+ "/ad.json";
@@ -71,6 +74,20 @@ public class AdsRanker extends Ranker {
     if(logInfo!=null)
       logs = logInfo.get("adLogs");
     System.out.println("loading log done!");
+
+
+    file = _options._adsPrefix+ "/CTR.json";
+    System.out.println("read CTR from " + file);
+    Map<String, Map<String,String>> ctrLog = new HashMap<String, Map<String, String>>();
+    try{
+          Reader reader = new InputStreamReader(new FileInputStream(file));
+          ctrLog = gson.fromJson(reader,
+                  new TypeToken<Map<String, Map<String, String>>>() {}.getType()); 
+      System.out.println("CTR has entryset " + ctrLog.entrySet().size());
+      reader.close();
+    }catch(IOException e){
+        System.out.println("error happened when load CTR");
+    }
 
 
     //get all relevant ads id for each query token, the key is company name and value is id_price
@@ -121,13 +138,18 @@ public class AdsRanker extends Ranker {
             int C = (int)_indexer._totalTermFrequency;
             relev_score *= (1.0-beta)*(double)fqi_d/(double)D + beta*(double)cqi/(double)C;
           }
+          System.out.println("QL result:"+relev_score);
 
           double cosine = getTitleSimilarity(ad.getTitle(),query._tokens);
           relev_score += cosine;
           //
           String query_s = convertToString(query._tokens);
           System.out.println("before loading ctr!");
-          double ctr = getCTR(query_s,term,ad.getTitle(),logs,company);
+          //double ctr = getCTR(query_s,term,ad.getTitle(),logs,company);
+          StringBuilder tmp = new StringBuilder();
+
+          String company_ad = tmp.append(company).append("_").append(subid).toString();
+          double ctr = getCTR(ctrLog,term,company_ad);
           System.out.println("after loading ctr!");
           double qscore = getQScore(relev_score, ctr);
          // double score = getFinalScore(qscore, price);
@@ -192,10 +214,20 @@ public class AdsRanker extends Ranker {
         break;
       }
     }
+    if(all.size()>3){
+      Vector<ScoredDocument> res = new Vector<ScoredDocument>();
+      for(int i = 0 ; i < 3 ; i++){
+        res.add(all.get(i));
+      }
+      return res;
+    }
+    saveCtrLog(ctrLog);
+
     return all;
   }
 
 //need to fill in
+  /*
   private double getCTR(String query, String token, String title, Map<String,String> logs,String company){
     // No log information at all!
     if(logs == null )
@@ -280,6 +312,50 @@ public class AdsRanker extends Ranker {
 
     
   }
+  */
+
+  private double getCTR(Map<String,Map<String,String>> ctrLog, String token, String ad){
+         Map<String,String> ads_ctr = ctrLog.get(token);
+         String ctr_info = ads_ctr.get(ad);
+         String[] tmp = ctr_info.split("\\+");
+         double res = Double.parseDouble(tmp[0]);
+         String view = tmp[1];
+         String click = tmp[2];
+         if(view.charAt(0) == 'T'){
+          if(click.charAt(0) == 'T'){
+            res += res/10;
+
+          }
+          else res -= res/10;
+          StringBuilder sb = new StringBuilder();
+          sb.append(Double.toString(res));
+          sb.append("+");
+          sb.append(tmp[1]);
+          sb.append("+");
+          sb.append(tmp[2]);
+          ads_ctr.put(ad,sb.toString());
+          ctrLog.put(token,ads_ctr);
+         }
+
+         return res;
+
+  }
+
+  public void saveCtrLog(Map<String,Map<String, String>> ctrLog) {
+    String name = _options._adsPrefix+ "/CTR";
+    try{
+    Writer writer = new OutputStreamWriter(new FileOutputStream(name));
+    Gson gson = new GsonBuilder().create();
+    gson.toJson(ctrLog, writer);
+    writer.close();
+    
+    ctrLog.clear();
+  }catch(IOException e){
+    System.out.println("error saving the ctrlog!");
+
+  }
+    
+  }
 
   private Vector<String> getOtherAdsInCompany(String company, String title){
     Vector<String> res = new Vector<String>();
@@ -346,7 +422,7 @@ public class AdsRanker extends Ranker {
 
 //need an actually equation
   private double getQScore(double revelance, double CTR){
-    return (0.5*revelance + CTR);
+    return (0.3*revelance + 0.7*CTR);
 
   }
 //need an actuallu equation
