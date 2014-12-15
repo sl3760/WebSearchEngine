@@ -77,22 +77,22 @@ public class AdsRanker extends Ranker {
     Map<String,String> targetAds = new HashMap<String,String>();
     Map<Integer, Double> priceList = new HashMap<Integer, Double>();
     for(String term: query._tokens){
-      System.out.println("the query term is: " + term);
+      //System.out.println("the query term is: " + term);
       if(auctionList.containsKey(term)){
       targetAds = auctionList.get(term);
       for(Map.Entry<String, String> entry : targetAds.entrySet()){
           String company = entry.getKey();
-          System.out.println("find one auction company: " + company);
-          System.out.println("the value is " + entry.getValue());
+          //System.out.println("find one auction company: " + company);
+          //System.out.println("the value is " + entry.getValue());
           String[] data = entry.getValue().split("\t");
-          System.out.println(data.length);
+          //System.out.println(data.length);
           int subid = Integer.valueOf(data[0].trim());
           double price = Double.valueOf(data[1].trim());
           //get relevence score
           Query c = new Query(company);
           Document ad = _indexer.nextDoc(c,subid);
           if(ad==null) continue;
-          System.out.println("find one matching ads w id " + ad._docid);
+          //System.out.println("find one matching ads w id " + ad._docid);
           String url = ad.getUrl();
           int adid = ad._docid;
           if(priceList.containsKey(adid)){
@@ -127,9 +127,9 @@ public class AdsRanker extends Ranker {
           relev_score += cosine;
           //
           String query_s = convertToString(query._tokens);
-          System.out.println("before loading ctr!");
+          //System.out.println("before loading ctr!");
           double ctr = getCTR(query_s,term,ad.getTitle(),logs,company);
-          System.out.println("after loading ctr!");
+          //System.out.println("after loading ctr!");
           double qscore = getQScore(relev_score, ctr);
          // double score = getFinalScore(qscore, price);
 

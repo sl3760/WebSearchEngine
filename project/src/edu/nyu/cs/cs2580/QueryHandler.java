@@ -183,10 +183,10 @@ class QueryHandler implements HttpHandler {
     if(ads_docs !=null){
       for (ScoredDocument ad_doc : ads_docs) {
         response.append("<li class=\"list-group-item list-group-item-info\">");
-        response.append("<div><h3><a href=\"http://localhost:25805/search/ads?title="+ad_doc.asTextResult()+"&sessionID="+sessionID+"\"+&compamyID=\""+ad_doc.getCompany_ads()+"\"&query=\""+query+"\">");
+        response.append("<div><h3><a href=\"http://localhost:25805/search/ads?title="+ad_doc.asTextResult()+"&sessionID="+sessionID+"&compamyID="+ad_doc.getCompany_ads()+"&query="+query+"\">");
         response.append(ad_doc.asTextResult());
         response.append("</a></h3></div>");
-        response.append("<div><h5>"+"</h5></div>");
+        response.append("<div><h5>"+ad_doc.getBody()+"</h5></div>");
         response.append("</li>");
       }
     }
@@ -300,6 +300,7 @@ class QueryHandler implements HttpHandler {
       response.append("<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" ><title>Bidding Done</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h2>Congratulations! You have successfully bidden!</h2></body></html>");
       respondWithMsg(exchange, response.toString());
     }
+
     if(Pattern.matches("/ads/.*",uriPath)){
       StringBuffer response = new StringBuffer();
       String[] urls = uriPath.split("/");
@@ -369,11 +370,11 @@ class QueryHandler implements HttpHandler {
           for(Map.Entry<String,String> entry : crtRes.entrySet()){
             String id = entry.getKey();
             String ctr = entry.getValue();
-            String[] vals = ctr.split("+");
+            String[] vals = ctr.split("\\+");
             if(id.equals(companyID)){
-              crtRes.put(id,vals[0]+vals[1]+"T");
+              crtRes.put(id,vals[0]+"+"+vals[1]+"+T");
             }else{
-              crtRes.put(id,vals[0]+vals[1]+"F");
+              crtRes.put(id,vals[0]+"+"+vals[1]+"+F");
             }
           }
           ctrMap.put(key,crtRes);
@@ -485,16 +486,15 @@ class QueryHandler implements HttpHandler {
       reader.close();
       for(ScoredDocument ad:scoredDocs_ads){
         for(Map.Entry<String, Map<String, String>> entry : ctrMap.entrySet()){
+          System.out.println("cgiArgs._query: "+cgiArgs._query);
           if(cgiArgs._query.indexOf(entry.getKey())!=-1){
             Map<String, String> res = entry.getValue();
             for(Map.Entry<String,String> entryCTR : res.entrySet()){
               String id = entryCTR.getKey();
               String ctr = entryCTR.getValue();
-              String[] vals = ctr.split("+");
+              String[] vals = ctr.split("\\+");
               if(id.equals(ad.getCompany_ads())){
-                res.put(id,vals[0]+"T"+vals[1]);
-              }else{
-                res.put(id,vals[0]+"F"+vals[1]);
+                res.put(id,vals[0]+"+T+"+vals[2]);
               }
             }
             ctrMap.put(entry.getKey(),res);
