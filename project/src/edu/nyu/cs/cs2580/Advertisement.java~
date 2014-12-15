@@ -58,4 +58,4 @@ public class Advertisement extends Document {
   public int getTotalTerms(){
     return this.totalTerms;
   }
-}
+}Advertisement

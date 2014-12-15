@@ -91,7 +91,6 @@ public class AdsRanker extends Ranker {
           //get relevence score
           Query c = new Query(company);
           Document ad = _indexer.nextDoc(c,subid);
-          if(ad==null) continue;
           System.out.println("find one matching ads w id " + ad._docid);
           String url = ad.getUrl();
           int adid = ad._docid;

@@ -494,7 +494,7 @@ public class AdsIndex extends Indexer implements Serializable{
   }
 
   @Override
-  public edu.nyu.cs.cs2580.Document nextDoc (Query query, int id){
+  public edu.nyu.cs.cs2580.Document nextDoc (Query query, int id) throws Exception{
 
     String company = query._query;
     String company_ads = company+"_"+id;
@@ -502,7 +502,7 @@ public class AdsIndex extends Indexer implements Serializable{
     	int adid  = _docIDs.get(company_ads);
     	return _ads.get(adid);
     }else
-    	return null;
+    	throw new Exception ("ads " + company_ads + " is not availble in corpus");
   }
     
   /**
