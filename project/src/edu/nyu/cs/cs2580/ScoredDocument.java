@@ -28,6 +28,14 @@ class ScoredDocument implements Comparable<ScoredDocument> {
     return buf.toString();
   }
 
+  public String getCompany_ads(){
+    return this._doc.getCompany_ads();
+  }
+
+  public String getBody(){
+    return this._doc.getBody();
+  }
+
   /**
    * @CS2580: Student should implement {@code asHtmlResult} for final project.
    */

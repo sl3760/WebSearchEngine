@@ -68,6 +68,9 @@ class Document implements Serializable {
   // Basic information for ranking
   private float _pageRank = 0.0f;
   private int _numViews = 0;
+  
+  private String _company_ads ="";
+  private String _body="";
 
   public Document(int docid) {
     _docid = docid;
@@ -103,5 +106,21 @@ class Document implements Serializable {
 
   public void setNumViews(int numViews) {
     this._numViews = numViews;
+  }
+  
+  public void setBody(String body){
+  	 this._body = body;
+  }
+  
+  public String getBody(){
+  	return this._body;
+  }
+  
+  public void setCompany_ads(String s){
+  	this._company_ads = s;
+  }
+  
+  public String getCompany_ads(){
+  	return _company_ads;
   }
 }

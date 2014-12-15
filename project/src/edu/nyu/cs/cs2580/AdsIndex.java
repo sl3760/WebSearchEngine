@@ -36,6 +36,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.ArrayList;
+import java.lang.Exception;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
@@ -104,7 +105,6 @@ public class AdsIndex extends Indexer implements Serializable{
     try {
       String line = null;
       while ((line = reader.readLine()) != null) {
-        System.out.println("XXXXXXXXXXXXXXXXXXX");
         processDocument(fileCount, line);
         fileCount++;
         if(fileCount>0&&fileCount%maxFileNum==0){
@@ -161,6 +161,7 @@ public class AdsIndex extends Indexer implements Serializable{
     Advertisement.setCompany_ads(company_ads); 
     Advertisement.setTitle(title);
     Advertisement.setUrl(url);
+    Advertisement.setBody(body);
     int a = readTerms(title, adid, map, set);
     int b = readTerms(body,adid, map, set);
     Advertisement.setTotalTerms(a+b);
@@ -493,66 +494,17 @@ public class AdsIndex extends Indexer implements Serializable{
   }
 
   @Override
-  public edu.nyu.cs.cs2580.Document nextDoc(Query query, int id) {
+  public edu.nyu.cs.cs2580.Document nextDoc (Query query, int id){
 
     String company = query._query;
     String company_ads = company+"_"+id;
-    int adid  = _docIDs.get(company_ads);
-    return _ads.get(adid);
+    if(_docIDs.containsKey(company_ads)){
+    	int adid  = _docIDs.get(company_ads);
+    	return _ads.get(adid);
+    }else
+    	return null;
   }
     
-  /**
-   *find next document id for given conjunctive query which might contain multiple words, return -1 if there is no next Advertisement
-   */
-  /*
-  private int nextQueryDocId(Query query, int adid){
-    if(query._tokens.size()==1){
-      return nextTermDocId(query._tokens.get(0),adid);
-    }else if(query._tokens.size() > 1){
-      int count = query._tokens.size();
-      int[] docs = new int[count];
-      for(int i = 0; i<count; i++){
-        docs[i] = nextTermDocId(query._tokens.get(i),adid);
-        if(docs[i] == -1){
-          return -1;
-        }
-      }
-      if(isEqual(docs)){
-        return docs[0];
-      }else{
-        int max = findMaxId(docs);
-        return nextQueryDocId(query,max-1);
-      }
-    }
-    return -1;
-  }
-
-  //check if docids returned for all query terms are same 
-  private boolean isEqual(int[] numbers){
-    if(numbers.length > 1){
-      for(int i =0; i<numbers.length-1; i++){
-        if(numbers[i]!=numbers[i+1]){
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-
-  private int findMaxId(int[] numbers){
-    if(numbers.length!=0){
-      int size = numbers.length;
-      int max = numbers[0];
-      for(int i = 1; i<size; i++){
-        if(numbers[i]>max){
-          max = numbers[i];
-        }
-      }
-      return max;
-    }
-    return -1;
-  }
-
   /**
    * find the next document id for given single term/word, return -1 if there is no next Advertisement
    */ 
@@ -646,40 +598,6 @@ public class AdsIndex extends Indexer implements Serializable{
     return _termCorpusFreq.containsKey(term) ? _termCorpusFreq.get(term) : 0;
   }
  
- /*
-  @Override
-  public int documentTermFrequency(String term, String url) {
-    int adid = _docIDs.get(url);
-   // System.out.println("in documentTermFreq, adid is " + adid + " w url "  + url);
-    try{
-      Advertisement d = null;
-      if(_docCache.containsKey(adid)){
-        d = _docCache.get(adid);
-      }else{
-        if((adid/DOC_WRITE_SIZE)!=docNum){
-          d = fectchDoc(adid);
-        }else{
-          adid = adid%DOC_WRITE_SIZE;
-          d = _ads.get(adid);
-        }
-        if(_docCache.size() >= 50){
-          _docCache.clear(); 
-        }        
-        _docCache.put(d.getDocID(), d);
-      }     
-      if(d!=null){
-        if(d.getTerms().containsKey(term)){
-          return d.getTerms().get(term);
-        }else{
-          return 0;
-        }
-      }
-    }catch(Exception e){
-      e.printStackTrace();
-    }     
-    return 0;
-  }
-  */
   public int documentTermFrequency(String term, int adid) {
     //int adid = _docIDs.get(url);
    // System.out.println("in documentTermFreq, adid is " + adid + " w url "  + url);
