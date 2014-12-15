@@ -34,7 +34,7 @@ public class Advertisement extends Document {
   public int getDocID(){
   	return this.docID;
   }
-
+/*
   public void setCompany_ads(String Advertisement){
   	this.company_ads = Advertisement;
   }
@@ -50,7 +50,7 @@ public class Advertisement extends Document {
   public String getBody(){
   	return this.body;
   }
-
+*/
   public void setTotalTerms(int terms){
     this.totalTerms = terms;
   }
@@ -58,4 +58,4 @@ public class Advertisement extends Document {
   public int getTotalTerms(){
     return this.totalTerms;
   }
-}Advertisement
+}
