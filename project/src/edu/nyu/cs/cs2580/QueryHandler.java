@@ -228,6 +228,7 @@ class QueryHandler implements HttpHandler {
     reader.close();
     Writer writer = new OutputStreamWriter(new FileOutputStream(ctrName));
     Map<String, String> res = new HashMap<String, String>();
+
     if(ctrMap.containsKey(word)){
       res = ctrMap.get(word);
     }
@@ -290,7 +291,7 @@ class QueryHandler implements HttpHandler {
     }
     if(uriPath.equals("/ads")){
       StringBuffer response = new StringBuffer();
-      response.append("<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" ><title>Home</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Choose a word to bid:</h3><br><br><ul class=\"list-group\"><a href=\"http://localhost:25805/ads/car\"><li class=\"list-group-item\">Car</li></a><a href=\"http://localhost:25805/ads/science\"><li class=\"list-group-item\">Science</li></a><a href=\"http://localhost:25805/ads/technology\"><li class=\"list-group-item\">Technology</li></a><a href=\"http://localhost:25805/ads/school\"><li class=\"list-group-item\">School</li></a><a href=\"http://localhost:25805/ads/music\"><li class=\"list-group-item\">Music</li></a></ul></div></div></body></html>");
+      response.append("<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" ><title>Home</title><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\"></head><body><div class=\"container\"><div class=\"header\"><h3 class=\"text-muted\">Advertising Auction</h3></div><div class=\"jumbotron\"><h3>Choose a word to bid:</h3><br><br><ul class=\"list-group\"><a href=\"http://localhost:25805/ads/car\"><li class=\"list-group-item\">Car</li></a><a href=\"http://localhost:25805/ads/science\"><li class=\"list-group-item\">Science</li></a><a href=\"http://localhost:25805/ads/tech\"><li class=\"list-group-item\">Tech</li></a><a href=\"http://localhost:25805/ads/school\"><li class=\"list-group-item\">School</li></a><a href=\"http://localhost:25805/ads/radio\"><li class=\"list-group-item\">Radio</li></a></ul></div></div></body></html>");
       respondWithMsg(exchange, response.toString());
     }
     if(uriPath.equals("/ads/create")){
