@@ -406,10 +406,27 @@ class QueryHandler implements HttpHandler {
         }
       }
       
+      /*
       String fileName = "data/ads/content/"+title;
       File file = new File(fileName);
       Headers responseHeaders = exchange.getResponseHeaders();
       responseHeaders.set("Content-Type", "text/html");
+      exchange.sendResponseHeaders(200, 0); // arbitrary number of bytes
+      OutputStream responseBody = exchange.getResponseBody();
+      FileInputStream fs = new FileInputStream(file);
+      final byte[] buffer = new byte[0x10000];
+      int count = 0;
+      while ((count = fs.read(buffer)) >= 0) {
+        responseBody.write(buffer,0,count);
+      }
+      fs.close();
+      responseBody.close();
+      */
+
+      String fileName = "data/ads/img/"+title+".jpg";
+      File file = new File(fileName);
+      Headers responseHeaders = exchange.getResponseHeaders();
+      responseHeaders.set("Content-Type", "image/jpg");
       exchange.sendResponseHeaders(200, 0); // arbitrary number of bytes
       OutputStream responseBody = exchange.getResponseBody();
       FileInputStream fs = new FileInputStream(file);
